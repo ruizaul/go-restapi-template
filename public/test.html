@@ -1,0 +1,1833 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>TacoShare Delivery - Testing Dashboard</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            :root {
+                --gray-50: #fafafa;
+                --gray-100: #f5f5f5;
+                --gray-200: #e5e5e5;
+                --gray-300: #d4d4d4;
+                --gray-400: #a3a3a3;
+                --gray-500: #737373;
+                --gray-600: #525252;
+                --gray-700: #404040;
+                --gray-800: #262626;
+                --gray-900: #171717;
+            }
+
+            body {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    sans-serif;
+                background: var(--gray-100);
+                color: var(--gray-900);
+                line-height: 1.6;
+            }
+
+            .container {
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+
+            .header {
+                background: white;
+                border: 1px solid var(--gray-200);
+                border-radius: 8px;
+                padding: 24px;
+                margin-bottom: 20px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+                font-weight: 700;
+                color: var(--gray-900);
+                margin-bottom: 8px;
+            }
+
+            .header p {
+                color: var(--gray-600);
+                font-size: 14px;
+            }
+
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 16px;
+                margin-bottom: 20px;
+            }
+
+            .stat-card {
+                background: white;
+                border: 1px solid var(--gray-200);
+                border-radius: 8px;
+                padding: 20px;
+            }
+
+            .stat-label {
+                font-size: 12px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: var(--gray-500);
+                margin-bottom: 8px;
+            }
+
+            .stat-value {
+                font-size: 32px;
+                font-weight: 700;
+                color: var(--gray-900);
+            }
+
+            .card {
+                background: white;
+                border: 1px solid var(--gray-200);
+                border-radius: 8px;
+                margin-bottom: 20px;
+                overflow: hidden;
+            }
+
+            .card-header {
+                padding: 20px;
+                border-bottom: 1px solid var(--gray-200);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .card-title {
+                font-size: 18px;
+                font-weight: 600;
+                color: var(--gray-900);
+            }
+
+            .card-body {
+                padding: 20px;
+            }
+
+            .tabs {
+                display: flex;
+                border-bottom: 1px solid var(--gray-200);
+                gap: 4px;
+                margin-bottom: 20px;
+            }
+
+            .tab {
+                padding: 12px 20px;
+                background: none;
+                border: none;
+                border-bottom: 2px solid transparent;
+                color: var(--gray-600);
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+            .tab:hover {
+                color: var(--gray-900);
+                background: var(--gray-50);
+            }
+
+            .tab.active {
+                color: var(--gray-900);
+                border-bottom-color: var(--gray-900);
+            }
+
+            .tab-content {
+                display: none;
+            }
+
+            .tab-content.active {
+                display: block;
+            }
+
+            .form-group {
+                margin-bottom: 16px;
+            }
+
+            .form-label {
+                display: block;
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--gray-700);
+                margin-bottom: 6px;
+            }
+
+            .form-input {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid var(--gray-300);
+                border-radius: 6px;
+                font-size: 14px;
+                transition: border-color 0.2s;
+            }
+
+            .form-input:focus {
+                outline: none;
+                border-color: var(--gray-900);
+            }
+
+            .form-input:disabled {
+                background: var(--gray-100);
+                color: var(--gray-500);
+            }
+
+            .btn {
+                padding: 10px 16px;
+                border: 1px solid var(--gray-300);
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+                background: white;
+                color: var(--gray-900);
+            }
+
+            .btn:hover {
+                background: var(--gray-50);
+                border-color: var(--gray-400);
+            }
+
+            .btn-primary {
+                background: var(--gray-900);
+                color: white;
+                border-color: var(--gray-900);
+            }
+
+            .btn-primary:hover {
+                background: var(--gray-800);
+                border-color: var(--gray-800);
+            }
+
+            .btn-sm {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+
+            .btn-group {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .badge {
+                display: inline-flex;
+                align-items: center;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .badge-connected {
+                background: var(--gray-900);
+                color: white;
+            }
+
+            .badge-disconnected {
+                background: var(--gray-200);
+                color: var(--gray-600);
+            }
+
+            .code-block {
+                background: var(--gray-900);
+                color: var(--gray-100);
+                padding: 16px;
+                border-radius: 6px;
+                font-family: "Courier New", monospace;
+                font-size: 13px;
+                overflow-x: auto;
+                max-height: 400px;
+                overflow-y: auto;
+            }
+
+            .code-block pre {
+                margin: 0;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+            }
+
+            .grid-2 {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }
+
+            .location-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+
+            .location-btn {
+                padding: 16px;
+                border: 1px solid var(--gray-300);
+                border-radius: 6px;
+                background: white;
+                cursor: pointer;
+                text-align: center;
+                transition: all 0.2s;
+            }
+
+            .location-btn:hover {
+                border-color: var(--gray-900);
+                background: var(--gray-50);
+            }
+
+            .location-btn.active {
+                background: var(--gray-900);
+                color: white;
+                border-color: var(--gray-900);
+            }
+
+            .location-name {
+                font-weight: 600;
+                font-size: 14px;
+                margin-bottom: 4px;
+            }
+
+            .location-coords {
+                font-size: 11px;
+                color: var(--gray-500);
+            }
+
+            .location-btn.active .location-coords {
+                color: var(--gray-300);
+            }
+
+            .order-card {
+                background: var(--gray-50);
+                border: 1px solid var(--gray-200);
+                border-radius: 6px;
+                padding: 16px;
+                margin-bottom: 12px;
+            }
+
+            .order-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+
+            .order-id {
+                font-weight: 600;
+                font-size: 14px;
+            }
+
+            .order-status {
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+                background: var(--gray-200);
+                color: var(--gray-700);
+            }
+
+            .order-details {
+                font-size: 13px;
+                color: var(--gray-600);
+                margin-bottom: 12px;
+            }
+
+            .order-details div {
+                margin-bottom: 4px;
+            }
+
+            .ws-message {
+                background: var(--gray-900);
+                color: var(--gray-100);
+                padding: 12px;
+                border-radius: 6px;
+                margin-bottom: 8px;
+                font-family: "Courier New", monospace;
+                font-size: 12px;
+            }
+
+            .ws-message-type {
+                font-weight: 600;
+                color: white;
+                margin-bottom: 4px;
+            }
+
+            .info-box {
+                background: var(--gray-50);
+                border: 1px solid var(--gray-200);
+                border-radius: 6px;
+                padding: 12px;
+                margin-bottom: 16px;
+                font-size: 13px;
+                color: var(--gray-600);
+            }
+
+            .info-box strong {
+                color: var(--gray-900);
+            }
+
+            .timeline {
+                position: relative;
+                padding-left: 32px;
+            }
+
+            .timeline-item {
+                position: relative;
+                padding-bottom: 20px;
+            }
+
+            .timeline-item::before {
+                content: "";
+                position: absolute;
+                left: -26px;
+                top: 6px;
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                background: var(--gray-900);
+                border: 2px solid white;
+                box-shadow: 0 0 0 2px var(--gray-200);
+            }
+
+            .timeline-item::after {
+                content: "";
+                position: absolute;
+                left: -22px;
+                top: 16px;
+                width: 2px;
+                height: calc(100% - 10px);
+                background: var(--gray-200);
+            }
+
+            .timeline-item:last-child::after {
+                display: none;
+            }
+
+            .timeline-time {
+                font-size: 11px;
+                color: var(--gray-500);
+                margin-bottom: 4px;
+            }
+
+            .timeline-content {
+                background: var(--gray-50);
+                padding: 10px;
+                border-radius: 4px;
+                font-size: 13px;
+            }
+
+            @media (max-width: 768px) {
+                .grid-2 {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <!-- Header -->
+            <div class="header">
+                <h1>TacoShare Delivery - Testing Dashboard</h1>
+                <p>
+                    Sistema de pruebas y monitoreo en tiempo real del flujo de
+                    órdenes
+                </p>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">WebSocket</div>
+                    <div class="stat-value" id="wsStatus">●</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Órdenes Activas</div>
+                    <div class="stat-value" id="activeOrders">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Mensajes WS</div>
+                    <div class="stat-value" id="wsMessageCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Token</div>
+                    <div class="stat-value" id="tokenStatus">-</div>
+                </div>
+            </div>
+
+            <!-- Auth Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Autenticación</div>
+                    <span id="authBadge" class="badge badge-disconnected"
+                        >Desconectado</span
+                    >
+                </div>
+                <div class="card-body">
+                    <div class="info-box" style="margin-bottom: 16px">
+                        <strong>Credenciales disponibles:</strong><br />
+                        • Driver: driver@tacoshare.com / Driver123!<br />
+                        • Merchant: merchant@tacoshare.com / Merchant123!<br />
+                        • Admin: admin@tacoshare.com / Admin123!
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input
+                                type="email"
+                                class="form-input"
+                                id="loginEmail"
+                                value="driver@tacoshare.com"
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Contraseña</label>
+                            <input
+                                type="password"
+                                class="form-input"
+                                id="loginPassword"
+                                value="Driver123!"
+                            />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Token JWT</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="authToken"
+                            placeholder="Se generará automáticamente al hacer login"
+                            readonly
+                        />
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="login()">
+                            Iniciar Sesión
+                        </button>
+                        <button class="btn" onclick="logout()">
+                            Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WebSocket Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">WebSocket Connection</div>
+                    <span id="wsBadge" class="badge badge-disconnected"
+                        >Desconectado</span
+                    >
+                </div>
+                <div class="card-body">
+                    <div class="info-box">
+                        <strong>URL:</strong> <code id="wsUrlDisplay"></code>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="connectWS()">
+                            Conectar
+                        </button>
+                        <button class="btn" onclick="disconnectWS()">
+                            Desconectar
+                        </button>
+                        <button class="btn" onclick="sendPing()">Ping</button>
+                        <button class="btn btn-sm" onclick="clearWSMessages()">
+                            Limpiar Mensajes
+                        </button>
+                    </div>
+                    <div style="margin-top: 16px">
+                        <div class="form-label">Mensajes Recibidos</div>
+                        <div
+                            id="wsMessagesContainer"
+                            style="max-height: 300px; overflow-y: auto"
+                        ></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Driver Dashboard -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Driver Dashboard</div>
+                </div>
+                <div class="card-body">
+                    <div class="tabs">
+                        <button
+                            class="tab active"
+                            onclick="switchTab('location')"
+                        >
+                            Ubicación
+                        </button>
+                        <button class="tab" onclick="switchTab('orders')">
+                            Mis Órdenes
+                        </button>
+                    </div>
+
+                    <!-- Location Tab -->
+                    <div id="location" class="tab-content active">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Lat</label>
+                                <input
+                                    type="number"
+                                    step="any"
+                                    class="form-input"
+                                    id="driverLat"
+                                    value="25.6697"
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Lng</label>
+                                <input
+                                    type="number"
+                                    step="any"
+                                    class="form-input"
+                                    id="driverLng"
+                                    value="-100.3095"
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            class="btn btn-primary"
+                            style="width: 100%; margin-bottom: 8px"
+                            onclick="updateDriverLocation()"
+                        >
+                            Actualizar Ubicación (siempre disponible)
+                        </button>
+                    </div>
+
+                    <!-- Orders Tab -->
+                    <div id="orders" class="tab-content">
+                        <div class="info-box" style="margin-bottom: 16px">
+                            <strong>📋 Flujo de Estados:</strong><br />
+                            pending → <strong>assigned</strong> → picked_up →
+                            in_transit → delivered
+                        </div>
+
+                        <div class="btn-group" style="margin-bottom: 16px">
+                            <button
+                                class="btn btn-primary"
+                                onclick="getMyOrders()"
+                            >
+                                🔄 Actualizar Mis Órdenes
+                            </button>
+                            <button
+                                class="btn"
+                                onclick="getPendingAssignments()"
+                            >
+                                🔔 Ver Asignaciones Pendientes
+                            </button>
+                        </div>
+
+                        <div
+                            id="ordersContainer"
+                            style="margin-top: 16px"
+                        ></div>
+
+                        <!-- Manual Status Update Section -->
+                        <div
+                            style="
+                                margin-top: 32px;
+                                padding-top: 24px;
+                                border-top: 1px solid var(--gray-200);
+                            "
+                        >
+                            <div
+                                class="form-label"
+                                style="
+                                    font-size: 14px;
+                                    font-weight: 600;
+                                    margin-bottom: 16px;
+                                "
+                            >
+                                Cambiar Estado Manualmente
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">ID de Orden</label>
+                                <input
+                                    type="text"
+                                    class="form-input"
+                                    id="manualOrderId"
+                                    placeholder="UUID completo o haz click en 'Usar este ID'"
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nuevo Estado</label>
+                                <select
+                                    class="form-input"
+                                    id="manualOrderStatus"
+                                >
+                                    <option value="assigned">assigned</option>
+                                    <option value="picked_up">picked_up</option>
+                                    <option value="in_transit">
+                                        in_transit
+                                    </option>
+                                    <option value="delivered">delivered</option>
+                                    <option value="cancelled">cancelled</option>
+                                </select>
+                            </div>
+                            <button
+                                class="btn btn-primary"
+                                style="width: 100%"
+                                onclick="updateOrderStatusManual()"
+                            >
+                                Actualizar Estado
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Merchant Dashboard -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Merchant - Crear Orden</div>
+                </div>
+                <div class="card-body">
+                    <p
+                        style="
+                            color: var(--gray-600);
+                            font-size: 14px;
+                            margin-bottom: 16px;
+                        "
+                    >
+                        Simula una orden externa que llega desde tu backend a la
+                        API de TacoShare.
+                    </p>
+
+                    <div class="form-label" style="margin-top: 16px">
+                        📍 PICKUP (busca drivers aquí)
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Lat</label>
+                            <input
+                                type="number"
+                                step="any"
+                                class="form-input"
+                                id="pickupLat"
+                                value="29.079707"
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Lng</label>
+                            <input
+                                type="number"
+                                step="any"
+                                class="form-input"
+                                id="pickupLng"
+                                value="-110.943144"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="form-label" style="margin-top: 16px">
+                        🏠 DELIVERY (opcional)
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Lat</label>
+                            <input
+                                type="number"
+                                step="any"
+                                class="form-input"
+                                id="deliveryLat"
+                                value="29.082069"
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Lng</label>
+                            <input
+                                type="number"
+                                step="any"
+                                class="form-input"
+                                id="deliveryLng"
+                                value="-110.952812"
+                            />
+                        </div>
+                    </div>
+
+                    <button
+                        class="btn btn-primary"
+                        style="width: 100%"
+                        onclick="createExternalOrder()"
+                    >
+                        Crear Orden y Comenzar Asignación
+                    </button>
+                </div>
+            </div>
+
+            <!-- Orders & Tracking -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Órdenes & Tracking</div>
+                </div>
+                <div class="card-body">
+                    <div class="tabs">
+                        <button
+                            class="tab active"
+                            onclick="switchTab('all-orders')"
+                        >
+                            Todas
+                        </button>
+                        <button class="tab" onclick="switchTab('tracking')">
+                            Tracking
+                        </button>
+                    </div>
+
+                    <div id="all-orders" class="tab-content active">
+                        <div class="btn-group">
+                            <button
+                                class="btn btn-primary"
+                                onclick="getAllOrders()"
+                            >
+                                Todas las Órdenes
+                            </button>
+                            <button
+                                class="btn"
+                                onclick="getOrdersByStatus('pending')"
+                            >
+                                Pendientes
+                            </button>
+                            <button
+                                class="btn"
+                                onclick="getOrdersByStatus('assigned')"
+                            >
+                                Asignadas
+                            </button>
+                            <button
+                                class="btn"
+                                onclick="getOrdersByStatus('in_transit')"
+                            >
+                                En Tránsito
+                            </button>
+                            <button
+                                class="btn"
+                                onclick="getOrdersByStatus('delivered')"
+                            >
+                                Entregadas
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="tracking" class="tab-content">
+                        <div class="form-group">
+                            <label class="form-label">ID de Orden</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                id="trackingOrderId"
+                                placeholder="UUID de la orden"
+                            />
+                        </div>
+                        <div class="btn-group">
+                            <button
+                                class="btn btn-primary"
+                                onclick="trackOrder()"
+                            >
+                                Rastrear Orden
+                            </button>
+                            <button class="btn" onclick="getOrderHistory()">
+                                Ver Historial
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Timeline de Eventos</div>
+                    <button class="btn btn-sm" onclick="clearTimeline()">
+                        Limpiar
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="eventTimeline" class="timeline"></div>
+                </div>
+            </div>
+
+            <!-- API Response -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Última Respuesta API</div>
+                    <button class="btn btn-sm" onclick="clearResponse()">
+                        Limpiar
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="code-block" id="lastResponse">
+                        <pre>Las respuestas de la API aparecerán aquí...</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // ========================================
+            // GLOBAL STATE
+            // ========================================
+            let ws = null;
+            let authToken = "";
+            let wsMessageCount = 0;
+            let currentLocation = "Centro MTY";
+
+            const API_BASE = window.location.origin + "/api/v1";
+            const WS_BASE =
+                window.location.protocol === "https:"
+                    ? "wss://" + window.location.host + "/ws"
+                    : "ws://" + window.location.host + "/ws";
+
+            // ========================================
+            // INITIALIZATION
+            // ========================================
+            document.addEventListener("DOMContentLoaded", function () {
+                document.getElementById("wsUrlDisplay").textContent = WS_BASE;
+                loadSavedToken();
+                loadTestData();
+                updateAuthStatus();
+            });
+
+            function loadSavedToken() {
+                const savedToken = localStorage.getItem("authToken");
+                if (savedToken) {
+                    document.getElementById("authToken").value = savedToken;
+                    authToken = savedToken;
+                    updateAuthStatus();
+                }
+            }
+
+            function loadTestData() {
+                // No data to pre-load anymore
+            }
+
+            // ========================================
+            // UI FUNCTIONS
+            // ========================================
+            function switchTab(tabName) {
+                // Remove active from all tabs and contents
+                document
+                    .querySelectorAll(".tab")
+                    .forEach((tab) => tab.classList.remove("active"));
+                document
+                    .querySelectorAll(".tab-content")
+                    .forEach((content) => content.classList.remove("active"));
+
+                // Add active to clicked tab
+                event.target.classList.add("active");
+
+                // Show corresponding content
+                const content = document.getElementById(tabName);
+                if (content) {
+                    content.classList.add("active");
+                }
+            }
+
+            function updateAuthStatus() {
+                const token = document.getElementById("authToken").value;
+                const badge = document.getElementById("authBadge");
+                const tokenStatus = document.getElementById("tokenStatus");
+
+                if (token) {
+                    badge.textContent = "Conectado";
+                    badge.className = "badge badge-connected";
+                    tokenStatus.textContent = "✓";
+                } else {
+                    badge.textContent = "Desconectado";
+                    badge.className = "badge badge-disconnected";
+                    tokenStatus.textContent = "-";
+                }
+            }
+
+            function updateWSStatus(connected) {
+                const badge = document.getElementById("wsBadge");
+                const status = document.getElementById("wsStatus");
+
+                if (connected) {
+                    badge.textContent = "Conectado";
+                    badge.className = "badge badge-connected";
+                    status.textContent = "●";
+                    status.style.color = "var(--gray-900)";
+                } else {
+                    badge.textContent = "Desconectado";
+                    badge.className = "badge badge-disconnected";
+                    status.textContent = "○";
+                    status.style.color = "var(--gray-400)";
+                }
+            }
+
+            function logResponse(data) {
+                const container = document.getElementById("lastResponse");
+                if (typeof data === "object") {
+                    container.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    container.innerHTML = `<pre>${data}</pre>`;
+                }
+            }
+
+            function addToTimeline(message) {
+                const timeline = document.getElementById("eventTimeline");
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString();
+
+                const item = document.createElement("div");
+                item.className = "timeline-item";
+                item.innerHTML = `
+                <div class="timeline-time">${timeStr}</div>
+                <div class="timeline-content">${message}</div>
+            `;
+
+                timeline.insertBefore(item, timeline.firstChild);
+
+                // Keep only last 20 events
+                while (timeline.children.length > 20) {
+                    timeline.removeChild(timeline.lastChild);
+                }
+            }
+
+            function clearTimeline() {
+                document.getElementById("eventTimeline").innerHTML = "";
+            }
+
+            function clearResponse() {
+                document.getElementById("lastResponse").innerHTML =
+                    "<pre>Las respuestas de la API aparecerán aquí...</pre>";
+            }
+
+            function clearWSMessages() {
+                document.getElementById("wsMessagesContainer").innerHTML = "";
+                wsMessageCount = 0;
+                document.getElementById("wsMessageCount").textContent = "0";
+            }
+
+            function getAuthHeaders() {
+                const token =
+                    document.getElementById("authToken").value || authToken;
+                return {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                };
+            }
+
+            // ========================================
+            // AUTH FUNCTIONS
+            // ========================================
+            async function login() {
+                const email = document.getElementById("loginEmail").value;
+                const password = document.getElementById("loginPassword").value;
+
+                try {
+                    const response = await fetch(`${API_BASE}/auth/login`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email, password }),
+                    });
+
+                    const data = await response.json();
+                    logResponse(data);
+
+                    if (data.status === "success") {
+                        authToken = data.data.access_token;
+                        document.getElementById("authToken").value = authToken;
+                        localStorage.setItem("authToken", authToken);
+                        updateAuthStatus();
+                        addToTimeline("✓ Login exitoso como driver");
+                    } else {
+                        addToTimeline(
+                            "✗ Error en login: " +
+                                JSON.stringify(data.data || data.message),
+                        );
+                    }
+                } catch (error) {
+                    addToTimeline("✗ Error de conexión: " + error.message);
+                }
+            }
+
+            function logout() {
+                authToken = "";
+                document.getElementById("authToken").value = "";
+                localStorage.removeItem("authToken");
+                updateAuthStatus();
+                addToTimeline("✓ Sesión cerrada");
+            }
+
+            // ========================================
+            // WEBSOCKET FUNCTIONS
+            // ========================================
+            function connectWS() {
+                const token =
+                    document.getElementById("authToken").value || authToken;
+                if (!token) {
+                    addToTimeline("✗ Debes iniciar sesión primero");
+                    return;
+                }
+
+                try {
+                    ws = new WebSocket(`${WS_BASE}?token=${token}`);
+
+                    ws.onopen = () => {
+                        updateWSStatus(true);
+                        addToTimeline("✓ WebSocket conectado");
+                    };
+
+                    ws.onmessage = (event) => {
+                        wsMessageCount++;
+                        document.getElementById("wsMessageCount").textContent =
+                            wsMessageCount;
+
+                        const wsMessage = JSON.parse(event.data);
+                        console.log("📩 Raw WS Message:", wsMessage);
+
+                        const container = document.getElementById(
+                            "wsMessagesContainer",
+                        );
+
+                        // Extract actual data from WSMessage structure
+                        let data = wsMessage;
+                        if (wsMessage.data) {
+                            // If data is JSON string, parse it
+                            if (typeof wsMessage.data === "string") {
+                                try {
+                                    data = JSON.parse(wsMessage.data);
+                                    console.log(
+                                        "📦 Parsed data from string:",
+                                        data,
+                                    );
+                                } catch (e) {
+                                    console.error(
+                                        "❌ Failed to parse data:",
+                                        e,
+                                    );
+                                    data = wsMessage.data;
+                                }
+                            } else {
+                                console.log(
+                                    "📦 Data is object:",
+                                    wsMessage.data,
+                                );
+                                data = wsMessage.data;
+                            }
+                        }
+                        console.log("✅ Final data to use:", data);
+
+                        const msg = document.createElement("div");
+                        msg.className = "ws-message";
+
+                        // Handle new_order type with action buttons
+                        if (wsMessage.type === "new_order") {
+                            msg.innerHTML = `
+                                <div class="ws-message-type">🔔 Nueva Orden Asignada</div>
+                                <div style="margin: 8px 0; font-size: 13px;">
+                                    <strong>Orden:</strong> ${data.order_id ? data.order_id.substring(0, 8) + "..." : "N/A"}<br>
+                                    <strong>Cliente:</strong> ${data.customer_name || "N/A"}<br>
+                                    <strong>Pickup:</strong> ${data.pickup_address || "N/A"}<br>
+                                    <strong>Delivery:</strong> ${data.delivery_address || "N/A"}<br>
+                                    <strong>Distancia:</strong> ${data.distance_km || "N/A"} km<br>
+                                    <strong>Total:</strong> $${data.total_amount || "N/A"}<br>
+                                    <strong>Expira:</strong> ${data.expires_at ? new Date(data.expires_at).toLocaleTimeString() : "N/A"}
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-primary btn-sm" onclick="acceptAssignment('${data.order_id}')">✓ Aceptar</button>
+                                    <button class="btn btn-sm" onclick="rejectAssignment('${data.order_id}')">✗ Rechazar</button>
+                                </div>
+                            `;
+
+                            addToTimeline(
+                                `🔔 Nueva orden: ${data.order_id ? data.order_id.substring(0, 8) : "N/A"}... - ${data.distance_km || "?"} km`,
+                            );
+
+                            // Update active orders count
+                            const currentCount =
+                                parseInt(
+                                    document.getElementById("activeOrders")
+                                        .textContent,
+                                ) || 0;
+                            document.getElementById(
+                                "activeOrders",
+                            ).textContent = currentCount + 1;
+                        } else {
+                            // Other message types
+                            msg.innerHTML = `
+                                <div class="ws-message-type">${data.type || "message"}</div>
+                                <pre>${JSON.stringify(data, null, 2)}</pre>
+                            `;
+                            addToTimeline(
+                                `WS: ${data.type || "message"} recibido`,
+                            );
+                        }
+
+                        container.insertBefore(msg, container.firstChild);
+                    };
+
+                    ws.onerror = (error) => {
+                        addToTimeline("✗ Error en WebSocket");
+                    };
+
+                    ws.onclose = () => {
+                        updateWSStatus(false);
+                        addToTimeline("○ WebSocket desconectado");
+                    };
+                } catch (error) {
+                    addToTimeline(
+                        "✗ Error al conectar WebSocket: " + error.message,
+                    );
+                }
+            }
+
+            function disconnectWS() {
+                if (ws) {
+                    ws.close();
+                    ws = null;
+                    updateWSStatus(false);
+                }
+            }
+
+            function sendPing() {
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    addToTimeline("✗ WebSocket no está conectado");
+                    return;
+                }
+
+                ws.send(JSON.stringify({ type: "ping" }));
+                addToTimeline("→ Ping enviado");
+            }
+
+            // ========================================
+            // DRIVER FUNCTIONS
+            // ========================================
+            async function updateDriverLocation() {
+                const lat = parseFloat(
+                    document.getElementById("driverLat").value,
+                );
+                const lng = parseFloat(
+                    document.getElementById("driverLng").value,
+                );
+
+                try {
+                    const response = await fetch(
+                        `${API_BASE}/drivers/me/location`,
+                        {
+                            method: "PATCH",
+                            headers: getAuthHeaders(),
+                            body: JSON.stringify({
+                                latitude: lat,
+                                longitude: lng,
+                            }),
+                        },
+                    );
+
+                    const data = await response.json();
+                    logResponse(data);
+
+                    if (data.status === "success") {
+                        addToTimeline(
+                            `✓ Ubicación actualizada: ${currentLocation}`,
+                        );
+                    } else {
+                        addToTimeline(
+                            "✗ Error: " +
+                                JSON.stringify(data.data || data.message),
+                        );
+                    }
+                } catch (error) {
+                    addToTimeline("✗ Error: " + error.message);
+                }
+            }
+
+            async function updateDriverAvailability() {
+                const available =
+                    document.getElementById("driverAvailability").value ===
+                    "true";
+
+                try {
+                    const response = await fetch(
+                        `${API_BASE}/drivers/me/availability`,
+                        {
+                            method: "PATCH",
+                            headers: getAuthHeaders(),
+                            body: JSON.stringify({ available }),
+                        },
+                    );
+
+                    const data = await response.json();
+                    logResponse(data);
+
+                    if (data.status === "success") {
+                        addToTimeline(
+                            `✓ Disponibilidad: ${available ? "Disponible" : "No disponible"}`,
+                        );
+                    } else {
+                        addToTimeline(
+                            "✗ Error: " +
+                                JSON.stringify(data.data || data.message),
+                        );
+                    }
+                } catch (error) {
+                    addToTimeline("✗ Error: " + error.message);
+                }
+            }
+
+            async function getDriverLocation() {
+                try {
+                    const response = await fetch(
+                        `${API_BASE}/drivers/me/location`,
+                        {
+                            headers: getAuthHeaders(),
+                        },
+                    );
+
+                    const data = await response.json();
+                    logResponse(data);
+
+                    if (data.status === "success") {
+                        addToTimeline("✓ Ubicación obtenida");
+                    }
+                } catch (error) {
+                    addToTimeline("✗ Error: " + error.message);
+                }
+            }
+
+            async function getPendingAssignments() {
+                const container = document.getElementById("ordersContainer");
+                container.innerHTML =
+                    '<p style="text-align: center; color: var(--gray-500);">Cargando asignaciones pendientes...</p>';
+
+                try {
+                    const response = await fetch(
+                        `${API_BASE}/assignments/pending`,
+                        {
+                            headers: getAuthHeaders(),
+                        },
+                    );
+
+                    const data = await response.json();
+                    logResponse(data);
+
+                    if (
+                        data.status === "success" &&
+                        data.data &&
+                        Array.isArray(data.data) &&
+                        data.data.length > 0
+                    ) {
+                        const assignmentsHTML = data.data
+                            .map(
+                                (assignment) => `
+                                <div class="order-card">
+                                    <div class="order-header">
+                                        <div class="order-id">Asignación: ${assignment.order_id ? assignment.order_id.substring(0, 8) + "..." : "N/A"}</div>
+                                        <div class="order-status">${assignment.status || "pending"}</div>
+                                    </div>
+                                    <div class="order-details">
+                                        <div><strong>Distancia:</strong> ${assignment.distance_to_pickup_km ? assignment.distance_to_pickup_km.toFixed(2) : "N/A"} km</div>
+                                        <div><strong>Radio búsqueda:</strong> ${assignment.search_radius_km ? assignment.search_radius_km.toFixed(2) : "N/A"} km</div>
+                                        <div><strong>Intento:</strong> #${assignment.attempt_number || 1}</div>
+                                        <div><strong>Expira:</strong> ${assignment.expires_at ? new Date(assignment.expires_at).toLocaleTimeString("es-MX") : "N/A"}</div>
+                                    </div>
+                                    <div class="btn-group">
+                                        <button class="btn btn-primary btn-sm" onclick="acceptAssignment('${assignment.order_id}')">Aceptar</button>
+                                        <button class="btn btn-sm" onclick="rejectAssignment('${assignment.order_id}')">Rechazar</button>
+                                    </div>
+                                </div>
+                            `,
+                            )
+                            .join("");
+
+                        container.innerHTML = `
+                            <div class="info-box" style="margin-bottom: 16px;">
+                                <strong>Tienes ${data.data.length} asignación(es) esperando respuesta</strong>
+                            </div>
+                            ${assignmentsHTML}
+                        `;
+
+                        addToTimeline(
+                            `✓ ${data.data.length} asignación(es) pendiente(s)`,
+                        );
+                    } else {
+                        container.innerHTML =
+                            '<p style="color: var(--gray-500); text-align: center; padding: 40px;">No hay asignaciones pendientes.<br>Las órdenes te llegarán por WebSocket.</p>';
+                        addToTimeline("○ Sin asignaciones pendientes");
+                    }
+                } catch (error) {
+                    container.innerHTML = `<p style="color: red; text-align: center;">Error: ${error.message}</p>`;
+                    addToTimeline("✗ Error: " + error.message);
+                }
+            }
+
+            async function acceptAssignment(orderId) {
+                try {
+                    const response = await fetch(
+                        `${API_BASE}/assignments/${orderId}/accept`,
+                        {
+                            method: "POST",
+                            headers: getAuthHeaders(),
+                        },
+                    );
+
+                    const data = await response.json();
+                    logResponse(data);
+
+                    if (data.status === "success") {
+                        addToTimeline(
+                            `✓ Orden ${orderId.substring(0, 8)}... aceptada`,
+                        );
+
+                        // Update WebSocket message to show accepted
+                        const wsContainer = document.getElementById(
+                            "wsMessagesContainer",
+                        );
+                        const messages =
+                            wsContainer.querySelectorAll(".ws-message");
+                        messages.forEach((msg) => {
+                            if (msg.innerHTML.includes(orderId)) {
+                                msg.style.background = "var(--gray-900)";
+                                msg.style.border = "2px solid white";
+                                msg.innerHTML = msg.innerHTML.replace(
+                                    "Nueva Orden Asignada",
+                                    "✅ ORDEN ACEPTADA",
+                                );
+                                const btnGroup =
+                                    msg.querySelector(".btn-group");
+                                if (btnGroup) btnGroup.remove();
+                            }
+                        });
+
+                        // Refresh orders
+                        getMyOrders();
+                    }
+                } catch (error) {
+                    addToTimeline("✗ Error: " + error.message);
+                }
+            }
+
+            async function rejectAssignment(orderId) {
+                try {
+                    const response = await fetch(
+                        `${API_BASE}/assignments/${orderId}/reject`,
+                        {
+                            method: "POST",
+                            headers: getAuthHeaders(),
+                            body: JSON.stringify({
+                                reason: "Rechazada por el driver",
+                            }),
+                        },
+                    );
+
+                    const data = await response.json();
+                    logResponse(data);
+
+                    if (data.status === "success") {
+                        addToTimeline(
+                            `○ Orden ${orderId.substring(0, 8)}... rechazada`,
+                        );
+
+                        // Refresh orders
+                        getMyOrders();
+
+                        // Remove from WebSocket messages
+                        const wsContainer = document.getElementById(
+                            "wsMessagesContainer",
+                        );
+                        const messages =
+                            wsContainer.querySelectorAll(".ws-message");
+                        messages.forEach((msg) => {
+                            if (msg.innerHTML.includes(orderId)) {
+                                msg.style.opacity = "0.3";
+                                msg.style.pointerEvents = "none";
+                            }
+                        });
+                    }
+                } catch (error) {
+                    addToTimeline("✗ Error: " + error.message);
+                }
+            }
+
+            async function getMyOrders() {
+                const container = document.getElementById("ordersContainer");
+                container.innerHTML =
+                    '<p style="text-align: center; color: var(--gray-500);">Cargando órdenes...</p>';
+
+                try {
+                    const response = await fetch(`${API_BASE}/orders`, {
+                        headers: getAuthHeaders(),
+                    });
+
+                    const data = await response.json();
+                    logResponse(data);
+
+                    if (
+                        data.status === "success" &&
+                        data.data &&
+                        data.data.items &&
+                        data.data.items.length > 0
+                    ) {
+                        const orders = data.data.items;
+
+                        container.innerHTML = orders
+                            .map((order) => {
+                                let actionButtons = "";
+                                if (order.status === "assigned") {
+                                    actionButtons = `
+                                        <div class="btn-group">
+                                            <button class="btn btn-primary btn-sm" onclick="updateOrderStatusQuick('${order.id}', 'picked_up')">Marcar Recogida</button>
+                                            <button class="btn btn-sm" onclick="fillManualUpdate('${order.id}')">Usar este ID</button>
+                                        </div>
+                                    `;
+                                } else if (order.status === "picked_up") {
+                                    actionButtons = `
+                                        <div class="btn-group">
+                                            <button class="btn btn-primary btn-sm" onclick="updateOrderStatusQuick('${order.id}', 'in_transit')">En Camino</button>
+                                            <button class="btn btn-sm" onclick="fillManualUpdate('${order.id}')">Usar este ID</button>
+                                        </div>
+                                    `;
+                                } else if (order.status === "in_transit") {
+                                    actionButtons = `
+                                        <div class="btn-group">
+                                            <button class="btn btn-primary btn-sm" onclick="updateOrderStatusQuick('${order.id}', 'delivered')">Marcar Entregada</button>
+                                            <button class="btn btn-sm" onclick="fillManualUpdate('${order.id}')">Usar este ID</button>
+                                        </div>
+                                    `;
+                                } else {
+                                    actionButtons = `
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm" onclick="fillManualUpdate('${order.id}')">Usar este ID</button>
+                                        </div>
+                                    `;
+                                }
+
+                                return `
+                                    <div class="order-card">
+                                        <div class="order-header">
+                                            <div class="order-id">Orden: ${order.id.substring(0, 8)}...</div>
+                                            <div class="order-status">${order.status}</div>
+                                        </div>
+                                        <div class="order-details">
+                                            <div><strong>Cliente:</strong> ${order.customer_name || "N/A"}</div>
+                                            <div><strong>Teléfono:</strong> ${order.customer_phone || "N/A"}</div>
+                                            <div><strong>Pickup:</strong> ${order.pickup_address || "N/A"}</div>
+                                            <div><strong>Delivery:</strong> ${order.delivery_address || "N/A"}</div>
+                                            <div><strong>Total:</strong> $${order.total_amount}</div>
+                                            <div><strong>Creada:</strong> ${new Date(order.created_at).toLocaleString("es-MX")}</div>
+                                            ${order.updated_at ? `<div><strong>Actualizada:</strong> ${new Date(order.updated_at).toLocaleString("es-MX")}</div>` : ""}
+                                        </div>
+                                        ${actionButtons}
+                                    </div>
+                                `;
+                            })
+                            .join("");
+
+                        addToTimeline(
+                            `✓ ${orders.length} orden(es) encontrada(s)`,
+                        );
+                    } else {
+                        container.innerHTML =
+                            '<p style="color: var(--gray-500); text-align: center; padding: 40px;">No tienes órdenes asignadas.<br>Espera a recibir una notificación por WebSocket.</p>';
+                        addToTimeline("○ Sin órdenes asignadas");
+                    }
+                } catch (error) {
+                    container.innerHTML = `<p style="color: red; text-align: center;">Error: ${error.message}</p>`;
+                    addToTimeline("✗ Error: " + error.message);
+                }
+            }
+
+            async function updateOrderStatusQuick(orderId, newStatus) {
+                try {
+                    const response = await fetch(
+                        `${API_BASE}/orders/${orderId}`,
+                        {
+                            method: "PATCH",
+                            headers: getAuthHeaders(),
+                            body: JSON.stringify({ status: newStatus }),
+                        },
+                    );
+
+                    const data = await response.json();
+                    logResponse(data);
+
+                    if (data.status === "success") {
+                        addToTimeline(`✓ Orden actualizada: ${newStatus}`);
+                        getMyOrders();
+                    } else {
+                        addToTimeline(
+                            "✗ Error: " +
+                                JSON.stringify(data.data || data.message),
+                        );
+                        alert(
+                            "Error al actualizar: " +
+                                JSON.stringify(data.data || data.message),
+                        );
+                    }
+                } catch (error) {
+                    addToTimeline("✗ Error: " + error.message);
+                    alert("Error: " + error.message);
+                }
+            }
+
+            function fillManualUpdate(orderId) {
+                document.getElementById("manualOrderId").value = orderId;
+                document.getElementById("manualOrderId").scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                });
+            }
+
+            async function updateOrderStatusManual() {
+                const orderId = document.getElementById("manualOrderId").value;
+                const newStatus =
+                    document.getElementById("manualOrderStatus").value;
+
+                if (!orderId) {
+                    alert("Debes ingresar un ID de orden");
+                    addToTimeline("✗ Debes ingresar un ID de orden");
+                    return;
+                }
+
+                try {
+                    const response = await fetch(
+                        `${API_BASE}/orders/${orderId}`,
+                        {
+                            method: "PATCH",
+                            headers: getAuthHeaders(),
+                            body: JSON.stringify({ status: newStatus }),
+                        },
+                    );
+
+                    const data = await response.json();
+                    logResponse(data);
+
+                    if (data.status === "success") {
+                        addToTimeline(
+                            `✓ Orden actualizada manualmente: ${newStatus}`,
+                        );
+                        getMyOrders();
+                    } else {
+                        addToTimeline(
+                            "✗ Error: " +
+                                JSON.stringify(data.data || data.message),
+                        );
+                        alert(
+                            "Error al actualizar: " +
+                                JSON.stringify(data.data || data.message),
+                        );
+                    }
+                } catch (error) {
+                    addToTimeline("✗ Error: " + error.message);
+                    alert("Error: " + error.message);
+                }
+            }
+
+            // ========================================
+            // MERCHANT FUNCTIONS
+            // ========================================
+            async function createExternalOrder() {
+                // Hardcoded merchant_id (en producción vendría del usuario autenticado)
+                const merchantId = "c37f3c53-2511-4848-a3d2-c8bc04ea42fc"; // Tacos El Güero
+
+                // Validate pickup coordinates
+                const pickupLat = parseFloat(
+                    document.getElementById("pickupLat").value,
+                );
+                const pickupLng = parseFloat(
+                    document.getElementById("pickupLng").value,
+                );
+
+                if (!pickupLat || !pickupLng) {
+                    addToTimeline(
+                        "✗ Error: Debes ingresar las coordenadas del PICKUP (restaurante)",
+                    );
+                    alert(
+                        "Por favor ingresa las coordenadas de PICKUP (restaurante)",
+                    );
+                    return;
+                }
+
+                const deliveryLat = parseFloat(
+                    document.getElementById("deliveryLat").value,
+                );
+                const deliveryLng = parseFloat(
+                    document.getElementById("deliveryLng").value,
+                );
+
+                const orderData = {
+                    external_order_id:
+                        "ORD-" + Math.floor(Math.random() * 10000),
+                    merchant_id: merchantId,
+                    customer_name: "Cliente Test",
+                    customer_phone: "+5218112345678",
+                    pickup_address: "Restaurante Test, Monterrey",
+                    pickup_latitude: pickupLat,
+                    pickup_longitude: pickupLng,
+                    pickup_instructions: "Ventanilla",
+                    delivery_address: "Cliente Test, Monterrey",
+                    delivery_latitude: deliveryLat || pickupLat,
+                    delivery_longitude: deliveryLng || pickupLng,
+                    delivery_instructions: "Timbre",
+                    delivery_code: String(
+                        Math.floor(1000 + Math.random() * 9000),
+                    ),
+                    total_amount: 250.5,
+                    delivery_fee: 30.0,
+                    items: [
+                        { name: "Tacos al Pastor", quantity: 3, price: 45.0 },
+                        { name: "Quesadillas", quantity: 2, price: 35.0 },
+                    ],
+                };
+
+                try {
+                    const response = await fetch(
+                        `${API_BASE}/orders/external`,
+                        {
+                            method: "POST",
+                            headers: getAuthHeaders(),
+                            body: JSON.stringify(orderData),
+                        },
+                    );
+
+                    const data = await response.json();
+                    logResponse(data);
+
+                    if (data.status === "success") {
+                        addToTimeline(
+                            `✓ Orden creada: ${data.data.id.substring(0, 8)}...`,
+                        );
+                        // Auto-fill tracking
+                        document.getElementById("trackingOrderId").value =
+                            data.data.id;
+                    } else {
+                        addToTimeline(
+                            "✗ Error: " +
+                                JSON.stringify(data.data || data.message),
+                        );
+                    }
+                } catch (error) {
+                    addToTimeline("✗ Error: " + error.message);
+                }
+            }
+
+            // ========================================
+            // ORDERS FUNCTIONS
+            // ========================================
+            async function getAllOrders() {
+                try {
+                    const response = await fetch(`${API_BASE}/orders`, {
+                        headers: getAuthHeaders(),
+                    });
+
+                    const data = await response.json();
+                    logResponse(data);
+
+                    if (data.status === "success") {
+                        const count = data.data.items
+                            ? data.data.items.length
+                            : 0;
+                        document.getElementById("activeOrders").textContent =
+                            count;
+                        addToTimeline(`✓ ${count} orden(es) encontrada(s)`);
+                    }
+                } catch (error) {
+                    addToTimeline("✗ Error: " + error.message);
+                }
+            }
+
+            async function getOrdersByStatus(status) {
+                try {
+                    const response = await fetch(
+                        `${API_BASE}/orders?status=${status}`,
+                        {
+                            headers: getAuthHeaders(),
+                        },
+                    );
+
+                    const data = await response.json();
+                    logResponse(data);
+
+                    if (data.status === "success") {
+                        const count = data.data.items
+                            ? data.data.items.length
+                            : 0;
+                        addToTimeline(
+                            `✓ ${count} orden(es) con estado "${status}"`,
+                        );
+                    }
+                } catch (error) {
+                    addToTimeline("✗ Error: " + error.message);
+                }
+            }
+
+            async function trackOrder() {
+                const orderId =
+                    document.getElementById("trackingOrderId").value;
+
+                if (!orderId) {
+                    addToTimeline("✗ Debes ingresar un ID de orden");
+                    return;
+                }
+
+                try {
+                    const response = await fetch(
+                        `${API_BASE}/orders/${orderId}`,
+                        {
+                            headers: getAuthHeaders(),
+                        },
+                    );
+
+                    const data = await response.json();
+                    logResponse(data);
+
+                    if (data.status === "success") {
+                        addToTimeline(`✓ Orden rastreada: ${data.data.status}`);
+                    } else {
+                        addToTimeline(
+                            "✗ Error: " +
+                                JSON.stringify(data.data || data.message),
+                        );
+                    }
+                } catch (error) {
+                    addToTimeline("✗ Error: " + error.message);
+                }
+            }
+
+            async function getOrderHistory() {
+                const orderId =
+                    document.getElementById("trackingOrderId").value;
+
+                if (!orderId) {
+                    addToTimeline("✗ Debes ingresar un ID de orden");
+                    return;
+                }
+
+                try {
+                    const response = await fetch(
+                        `${API_BASE}/orders/${orderId}/tracking`,
+                        {
+                            headers: getAuthHeaders(),
+                        },
+                    );
+
+                    const data = await response.json();
+                    logResponse(data);
+
+                    if (data.status === "success") {
+                        addToTimeline("✓ Historial obtenido");
+                    }
+                } catch (error) {
+                    addToTimeline("✗ Error: " + error.message);
+                }
+            }
+        </script>
+    </body>
+</html>

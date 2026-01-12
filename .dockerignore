@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Build artifacts
+bin/
+tmp/
+*.exe
+*.test
+
+# Dependencies
+vendor/
+
+# Documentation
+*.md
+# docs/ - REMOVED: Needed for Swagger API documentation in production
+
+# CI/CD
+.github/
+
+# Local config
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

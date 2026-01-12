@@ -1,0 +1,186 @@
+# ============================================================================
+# GCLOUDIGNORE - Optimize Cloud Build upload speed
+# ============================================================================
+# This file prevents unnecessary files from being uploaded to Cloud Build
+# Smaller upload = faster build start time
+#
+# Upload size optimization:
+# - Without .gcloudignore: ~50-200 MB (includes node_modules, .git, binaries)
+# - With .gcloudignore: ~5-20 MB (only source code and necessary files)
+# - Upload time savings: 10-60 seconds per build
+# ============================================================================
+
+# ============================================================================
+# VERSION CONTROL
+# ============================================================================
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# ============================================================================
+# DOCUMENTATION (not needed for builds)
+# ============================================================================
+*.md
+!README.md  # Keep README if needed for documentation generation
+docs/swagger/*
+docs/*.html
+
+# ============================================================================
+# DEVELOPMENT ARTIFACTS
+# ============================================================================
+# Compiled binaries
+bin/
+tmp/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test coverage
+coverage.out
+coverage.html
+*.test
+
+# Logs
+*.log
+logs/
+
+# ============================================================================
+# DEPENDENCIES (already in Dockerfile via go mod download)
+# ============================================================================
+# Go vendor directory (if using vendoring, comment this out)
+vendor/
+
+# Node modules (if using frontend build tools)
+node_modules/
+
+# Python virtual environments
+venv/
+.venv/
+*.pyc
+__pycache__/
+
+# ============================================================================
+# IDE AND EDITOR FILES
+# ============================================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*~
+.DS_Store
+Thumbs.db
+
+# ============================================================================
+# ENVIRONMENT AND SECRETS
+# ============================================================================
+# Environment files (use Secret Manager in Cloud Run)
+.env
+.env.*
+!.env.example
+
+# Sensitive config files
+config/firebase-service-account.json
+*.pem
+*.key
+*.p12
+
+# ============================================================================
+# INFRASTRUCTURE AS CODE (not needed in Docker build)
+# ============================================================================
+terraform/
+*.tf
+*.tfvars
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+
+# Kubernetes manifests (if using k8s)
+k8s/
+*.yaml
+!cloudbuild.yaml  # Keep Cloud Build config
+
+# ============================================================================
+# DATABASE MIGRATIONS (REQUIRED - do not ignore)
+# ============================================================================
+# migrations/ directory is REQUIRED for Cloud Run deployments
+# Do NOT add migrations/ to .gcloudignore
+
+# ============================================================================
+# TEST FILES (not needed in production builds)
+# ============================================================================
+*_test.go
+testdata/
+test/
+tests/
+*.spec.js
+*.test.js
+
+# ============================================================================
+# BUILD CONFIGURATION
+# ============================================================================
+# IMPORTANT: Dockerfile is REQUIRED for Cloud Build - do NOT ignore it
+# Only ignore local docker-compose files
+.dockerignore
+docker-compose.yml
+docker-compose.*.yml
+
+# ============================================================================
+# DEVELOPMENT TOOLS
+# ============================================================================
+# Air (live reload)
+.air.toml
+
+# Makefile (not needed in Cloud Build, use cloudbuild.yaml steps)
+Makefile
+
+# Migration script (already copied in Dockerfile)
+# Keep migrate.sh - it's needed for Cloud Run Jobs
+
+# ============================================================================
+# CLOUD BUILD ARTIFACTS
+# ============================================================================
+# Build errors
+build-errors.log
+
+# Previous builds
+*.tar.gz
+*.zip
+
+# ============================================================================
+# OS-SPECIFIC FILES
+# ============================================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ============================================================================
+# TEMPORARY FILES
+# ============================================================================
+*.tmp
+*.temp
+*.cache
+.cache/
+
+# ============================================================================
+# NOTES
+# ============================================================================
+# This file uses gitignore syntax:
+# - Lines starting with # are comments
+# - ! negates a pattern (includes file even if previously excluded)
+# - / at end means directory
+# - * is wildcard
+# - ** matches nested directories
+#
+# Testing your .gcloudignore:
+#   gcloud meta list-files-for-upload
+#
+# This shows exactly what files will be uploaded to Cloud Build
+# ============================================================================
