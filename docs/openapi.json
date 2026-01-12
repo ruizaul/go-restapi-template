@@ -1,0 +1,122 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "description": "A modern Go REST API template with best practices",
+        "title": "Go API Template",
+        "contact": {
+            "name": "API Support",
+            "url": "http://www.example.com/support",
+            "email": "support@example.com"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/test/hello": {
+            "get": {
+                "description": "Returns a hello world message",
+                "tags": [
+                    "test"
+                ],
+                "summary": "Hello World Example",
+                "responses": {
+                    "200": {
+                        "description": "Success response with hello data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/models.HelloResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/models.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "servers": [
+        {
+            "url": "//localhost:8080"
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "description": "Type \"Bearer\" followed by a space and JWT token.",
+                "type": "apiKey",
+                "name": "Authorization",
+                "in": "header"
+            }
+        },
+        "schemas": {
+            "models.ErrorResponse": {
+                "description": "Server error response",
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "description": "Code is the HTTP status code",
+                        "type": "integer",
+                        "example": 500
+                    },
+                    "message": {
+                        "description": "Message describes the server error",
+                        "type": "string",
+                        "example": "Internal server error"
+                    },
+                    "status": {
+                        "description": "Status is always \"error\" for server errors",
+                        "type": "string",
+                        "example": "error"
+                    }
+                }
+            },
+            "models.HelloData": {
+                "type": "object",
+                "properties": {
+                    "example": {
+                        "description": "Example indicates if this is an example endpoint",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "message": {
+                        "description": "Message is the greeting message",
+                        "type": "string",
+                        "example": "Hello World! This is an example endpoint"
+                    }
+                }
+            },
+            "models.HelloResponse": {
+                "description": "Success response with hello data",
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "description": "Data contains the response payload",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/models.HelloData"
+                            }
+                        ]
+                    },
+                    "status": {
+                        "description": "Status is always \"success\" for successful responses",
+                        "type": "string",
+                        "example": "success"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,299 +1,158 @@
 package main
 
 import (
-	"context"
+	"fmt"
+	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 
-	"tacoshare-delivery-api/config"
-	"tacoshare-delivery-api/database"
-	"tacoshare-delivery-api/docs"
-	"tacoshare-delivery-api/pkg/envx"
-	"tacoshare-delivery-api/pkg/middleware"
-	"tacoshare-delivery-api/pkg/otp"
-	"tacoshare-delivery-api/pkg/router"
-	"tacoshare-delivery-api/pkg/storage"
+	scalargo "github.com/bdpiprava/scalar-go"
 
-	// Features
-	"tacoshare-delivery-api/internal/auth"
-	authHandlers "tacoshare-delivery-api/internal/auth/handlers"
-	authRepos "tacoshare-delivery-api/internal/auth/repositories"
-	authServices "tacoshare-delivery-api/internal/auth/services"
+	"go-api-template/internal/test"
+	"go-api-template/pkg/response"
 
-	"tacoshare-delivery-api/internal/documents"
-	documentHandlers "tacoshare-delivery-api/internal/documents/handlers"
-	documentRepos "tacoshare-delivery-api/internal/documents/repositories"
-	documentServices "tacoshare-delivery-api/internal/documents/services"
-
-	"tacoshare-delivery-api/internal/drivers"
-	driverAdapters "tacoshare-delivery-api/internal/drivers/adapters"
-	driverHandlers "tacoshare-delivery-api/internal/drivers/handlers"
-	driverRepos "tacoshare-delivery-api/internal/drivers/repositories"
-	driverServices "tacoshare-delivery-api/internal/drivers/services"
-
-	"tacoshare-delivery-api/internal/merchants"
-	merchantHandlers "tacoshare-delivery-api/internal/merchants/handlers"
-	merchantRepos "tacoshare-delivery-api/internal/merchants/repositories"
-	merchantServices "tacoshare-delivery-api/internal/merchants/services"
-
-	"tacoshare-delivery-api/internal/notifications"
-	notificationHandlers "tacoshare-delivery-api/internal/notifications/handlers"
-	notificationRepos "tacoshare-delivery-api/internal/notifications/repositories"
-	notificationServices "tacoshare-delivery-api/internal/notifications/services"
-
-	"tacoshare-delivery-api/internal/orders"
-	orderHandlers "tacoshare-delivery-api/internal/orders/handlers"
-	orderRepos "tacoshare-delivery-api/internal/orders/repositories"
-	orderServices "tacoshare-delivery-api/internal/orders/services"
-
-	"tacoshare-delivery-api/internal/users"
-	userHandlers "tacoshare-delivery-api/internal/users/handlers"
-	userRepos "tacoshare-delivery-api/internal/users/repositories"
-	userServices "tacoshare-delivery-api/internal/users/services"
-
-	"tacoshare-delivery-api/internal/websockets"
-	wsHandlers "tacoshare-delivery-api/internal/websockets/handlers"
-	wsServices "tacoshare-delivery-api/internal/websockets/services"
-
-	"tacoshare-delivery-api/pkg/gmaps"
+	_ "go-api-template/docs"
 )
 
-// userRepositoryAdapter adapts the user repository for document service
-type userRepositoryAdapter struct {
-	userRepo *userRepos.UserRepository
-}
+//	@title			Go API Template
+//	@version		1.0.0
+//	@description	A modern Go REST API template with best practices
 
-func (a *userRepositoryAdapter) FindByID(id uuid.UUID) (*documentServices.User, error) {
-	user, err := a.userRepo.FindByID(id)
-	if err != nil {
-		return nil, err
-	}
-	if user == nil {
-		return nil, nil
-	}
-	return &documentServices.User{ID: user.ID}, nil
-}
+//	@contact.name	API Support
+//	@contact.url	http://www.example.com/support
+//	@contact.email	support@example.com
 
-//	@title			TacoShare Delivery API
-//	@version		1.0
-//	@description	Delivery marketplace API for customers, merchants, and drivers.
+//	@license.name	MIT
+//	@license.url	https://opensource.org/licenses/MIT
 
 //	@host		localhost:8080
-//	@BasePath	/api/v1
+//	@BasePath	/
 
 //	@securityDefinitions.apikey	BearerAuth
 //	@in							header
 //	@name						Authorization
-//	@description				Type "Bearer" followed by a space and JWT token. Example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+//	@description				Type "Bearer" followed by a space and JWT token.
 
 //	@accept		json
 //	@produce	json
 
+// responseWriter wraps http.ResponseWriter to capture status code
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func newResponseWriter(w http.ResponseWriter) *responseWriter {
+	return &responseWriter{w, http.StatusOK}
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
+// loggingMiddleware logs all HTTP requests
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		// Wrap response writer to capture status code
+		wrapped := newResponseWriter(w)
+
+		// Process request
+		next.ServeHTTP(wrapped, r)
+
+		// Log the request
+		log.Printf(
+			"[%s] %s %s %d %v",
+			r.Method,
+			r.URL.Path,
+			r.RemoteAddr,
+			wrapped.statusCode,
+			time.Since(start),
+		)
+	})
+}
+
 func main() {
-	// Load environment variables with priority: .env.local > .env.{ENV} > .env
-	if err := envx.LoadEnv(); err != nil {
-		panic(err)
-	}
+	// Configure logger
+	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
+	log.SetPrefix("[API] ")
 
-	// Update Swagger host dynamically based on BASE_URL
-	baseURL := os.Getenv("BASE_URL")
-	if baseURL != "" {
-		updateSwaggerHost(baseURL)
-	}
-
-	// Initialize Twilio client
-	twilioConfig := config.LoadTwilioConfig()
-	otp.InitializeTwilio(
-		twilioConfig.AccountSID,
-		twilioConfig.APIKey,
-		twilioConfig.APISecret,
-		twilioConfig.FromPhone,
-		twilioConfig.Enabled,
-	)
-
-	// Connect to database
-	// Note: We allow the server to start even if DB connection fails
-	// This enables Cloud Run health checks to pass while troubleshooting
-	dbConnected := false
-	if err := database.Connect(); err != nil {
-		// Server will start but database operations will fail
-	} else {
-		dbConnected = true
-	}
-
-	// Defer database close only if connected
-	if dbConnected {
-		defer func() {
-			_ = database.Close()
-		}()
-	}
-
-	// Initialize repositories
-	authRepo := authRepos.NewUserRepository(database.DB)
-	refreshTokenRepo := authRepos.NewRefreshTokenRepository(database.DB)
-	userRepo := userRepos.NewUserRepository(database.DB)
-	documentRepo := documentRepos.NewDocumentRepository(database.DB)
-	notificationRepo := notificationRepos.NewNotificationRepository(database.DB)
-	fcmTokenRepo := notificationRepos.NewFCMTokenRepository(database.DB)
-	merchantRepo := merchantRepos.NewMerchantRepository(database.DB)
-	orderRepo := orderRepos.NewOrderRepository(database.DB)
-	assignmentRepo := orderRepos.NewAssignmentRepository(database.DB)
-	locationRepo := driverRepos.NewLocationRepository(database.DB)
-
-	// Initialize services
-	authService := authServices.NewAuthService(authRepo, refreshTokenRepo)
-	userService := userServices.NewUserService(userRepo)
-
-	// Create adapter for user repository to work with document service
-	userRepoAdapter := &userRepositoryAdapter{userRepo: userRepo}
-	documentService := documentServices.NewDocumentService(documentRepo, userRepoAdapter)
-
-	// Initialize R2 storage client (optional - for document uploads)
-	// Note: We allow the server to start even if R2 is not configured
-	// This enables Cloud Run health checks to pass while troubleshooting
-	r2Config := storage.LoadConfigFromEnv()
-	r2Client, err := storage.NewR2Client(r2Config)
-	if err != nil {
-		r2Client = nil // Set to nil to indicate R2 is not available
-	}
-
-	// Initialize FCM service (optional - will be nil if credentials not provided)
-	var notificationService *notificationServices.NotificationService
-
-	// Try JSON credentials first (for Cloud Run with Secret Manager)
-	fcmCredentialsJSON := os.Getenv("FCM_CREDENTIALS_JSON")
-	if fcmCredentialsJSON != "" {
-		fcmService, err := notificationServices.NewFCMServiceFromJSON(context.Background(), fcmCredentialsJSON)
-		if err != nil {
-			notificationService = notificationServices.NewNotificationService(notificationRepo, fcmTokenRepo, nil)
-		} else {
-			notificationService = notificationServices.NewNotificationService(notificationRepo, fcmTokenRepo, fcmService)
-		}
-	} else {
-		// Fallback to file path (for local development)
-		fcmCredentialsPath := os.Getenv("FCM_CREDENTIALS_PATH")
-		if fcmCredentialsPath != "" {
-			fcmService, err := notificationServices.NewFCMService(context.Background(), fcmCredentialsPath)
-			if err != nil {
-				notificationService = notificationServices.NewNotificationService(notificationRepo, fcmTokenRepo, nil)
-			} else {
-				notificationService = notificationServices.NewNotificationService(notificationRepo, fcmTokenRepo, fcmService)
-			}
-		} else {
-			notificationService = notificationServices.NewNotificationService(notificationRepo, fcmTokenRepo, nil)
-		}
-	}
-
-	// Initialize Google Maps client
-	gmapsClient, _ := gmaps.NewClient()
-
-	// Initialize WebSocket hub
-	wsHub := wsServices.NewHub()
-	go wsHub.Run()
-
-	// Create WebSocket hub adapter for assignment service
-	wsHubAdapter := wsServices.NewHubAdapter(wsHub)
-
-	// Initialize order and driver services
-	merchantService := merchantServices.NewMerchantService(merchantRepo)
-	orderService := orderServices.NewOrderService(orderRepo, gmapsClient)
-
-	// Initialize route recalculation service
-	routeRecalcService := driverServices.NewRouteRecalculationService(gmapsClient)
-
-	// Create adapters for location service
-	orderRepoAdapter := driverAdapters.NewOrderRepositoryAdapter(orderRepo)
-	wsHubAdapterForLocation := driverAdapters.NewWebSocketHubAdapter(wsHub)
-
-	// Initialize location service with route recalculation
-	locationService := driverServices.NewLocationService(locationRepo, orderRepoAdapter, routeRecalcService, wsHubAdapterForLocation)
-
-	// Initialize assignment service (core of the system)
-	assignmentService := orderServices.NewAssignmentService(
-		orderRepo,
-		assignmentRepo,
-		locationRepo,
-		gmapsClient,
-		notificationService,
-		wsHubAdapter,
-	)
-
-	// Initialize handlers
-	authHandler := authHandlers.NewAuthHandler(authService)
-	userHandler := userHandlers.NewUserHandler(userService)
-	documentHandler := documentHandlers.NewDocumentHandler(documentService)
-	uploadHandler := documentHandlers.NewUploadHandler(r2Client)
-	notificationHandler := notificationHandlers.NewNotificationHandler(notificationService)
-	adminNotificationHandler := notificationHandlers.NewAdminNotificationHandler(notificationService)
-	merchantHandler := merchantHandlers.NewMerchantHandler(merchantService)
-	orderHandler := orderHandlers.NewOrderHandler(orderService, assignmentService)
-	assignmentHandler := orderHandlers.NewAssignmentHandler(assignmentService)
-	locationHandler := driverHandlers.NewLocationHandler(locationService)
-	wsHandler := wsHandlers.NewWSHandler(wsHub)
-
-	// Create mux and register all routes
+	// Create HTTP router
 	mux := http.NewServeMux()
 
-	// Register system routes (health, swagger)
-	router.RegisterSystemRoutes(mux)
-
-	// Serve admin panel
-	mux.HandleFunc("GET /admin", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "public/admin.html")
+	// Health check endpoint
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
+		response.Success(w, map[string]string{"message": "Server is running"})
 	})
 
-	// Serve test page
-	mux.HandleFunc("GET /test", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "public/test.html")
+	// Serve swagger.json directly
+	mux.HandleFunc("GET /docs/swagger.json", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		http.ServeFile(w, nil, "./docs/swagger.json")
+	})
+
+	// API documentation with Scalar
+	mux.HandleFunc("GET /docs", func(w http.ResponseWriter, _ *http.Request) {
+		html, err := scalargo.NewV2(
+			scalargo.WithSpecDir("./docs"),
+			scalargo.WithBaseFileName("openapi.json"),
+			scalargo.WithTheme(scalargo.ThemeAlternate),
+			scalargo.WithDarkMode(),
+			scalargo.WithLayout(scalargo.LayoutModern),
+			scalargo.WithMetaDataOpts(
+				scalargo.WithTitle("Go API Template - Documentation"),
+				scalargo.WithKeyValue("defaultOpenAllTags", true),
+				scalargo.WithKeyValue("expandAllModelSections", true),
+				scalargo.WithKeyValue("expandAllResponses", true),
+			),
+			scalargo.WithSidebarVisibility(true),
+			scalargo.WithShowToolbar(scalargo.ShowToolbarLocalhost),
+			scalargo.WithOperationTitleSource(scalargo.OperationTitleSourceSummary),
+			scalargo.WithPersistAuth(false),
+			scalargo.WithHideSearch(false),
+			scalargo.WithShowOperationID(false),
+			scalargo.WithOrderSchemaPropertiesBy(scalargo.SchemaPropertiesOrderAlpha),
+			scalargo.WithDefaultFonts(),
+		)
+		if err != nil {
+			response.InternalError(w, fmt.Sprintf("Error generating documentation: %v", err))
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		//nolint:errcheck // Response write errors are not recoverable
+		fmt.Fprint(w, html)
 	})
 
 	// Register feature routes
-	auth.RegisterRoutes(mux, authHandler)
-	users.RegisterRoutes(mux, userHandler)
-	documents.RegisterRoutes(mux, documentHandler, uploadHandler)
-	notifications.RegisterRoutes(mux, notificationHandler, adminNotificationHandler)
-	merchants.RegisterRoutes(mux, merchantHandler)
-	orders.RegisterRoutes(mux, orderHandler)
-	assignments := router.NewAssignmentRouter(assignmentHandler)
-	assignments.RegisterRoutes(mux)
-	drivers.RegisterRoutes(mux, locationHandler)
-	websockets.RegisterRoutes(mux, wsHandler)
+	test.RegisterRoutes(mux)
 
-	// Apply global middleware
-	handler := middleware.Logger(middleware.CORS(mux))
-
+	// Get port from environment
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	// Create HTTP server with timeouts to prevent resource exhaustion
+	// Create HTTP server with production-ready timeouts
 	server := &http.Server{
 		Addr:              ":" + port,
-		Handler:           handler,
+		Handler:           loggingMiddleware(mux),
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
 		IdleTimeout:       60 * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	_ = server.ListenAndServe()
-}
+	log.Printf("🚀 Server starting on http://localhost:%s", port)
+	log.Printf("📚 API Documentation: http://localhost:%s/docs", port)
+	log.Printf("💚 Health Check: http://localhost:%s/health", port)
 
-// updateSwaggerHost updates the Swagger documentation host dynamically
-func updateSwaggerHost(baseURL string) {
-	// Remove http:// or https:// prefix
-	host := strings.TrimPrefix(baseURL, "http://")
-	host = strings.TrimPrefix(host, "https://")
-
-	// Remove trailing slash if present
-	host = strings.TrimSuffix(host, "/")
-
-	// Update the Swagger doc
-	docs.SwaggerInfo.Host = host
+	if err := server.ListenAndServe(); err != nil {
+		log.Printf("❌ Server error: %v", err)
+		os.Exit(1)
+	}
 }

@@ -21,46 +21,27 @@ linters:
     - gocyclo
     - gocritic
 
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-  gocyclo:
-    min-complexity: 15
-  govet:
-    enable-all: true
-    disable:
-      - shadow
-      - fieldalignment
-  gosec:
-    excludes:
-      - G104
-      - G304
-  goconst:
-    min-occurrences: 3
-    min-len: 3
-  misspell:
-    locale: US
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+    gocyclo:
+      min-complexity: 15
+    govet:
+      enable-all: true
+      disable:
+        - shadow
+        - fieldalignment
+    gosec:
+      excludes:
+        - G104
+        - G304
+    goconst:
+      min-occurrences: 3
+      min-len: 3
+    misspell:
+      locale: US
 
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-rules:
-    - path: '(.+)_test\.go'
-      linters:
-        - gocyclo
-        - errcheck
-        - gosec
-    - path: 'cmd/server/main\.go'
-      linters:
-        - gocyclo
-    - path: "docs/"
-      linters:
-        - staticcheck
-        - unused
-  exclude-dirs:
-    - docs
-    - migrations
-    - tmp
-    - vendor
-    - scripts/debug
