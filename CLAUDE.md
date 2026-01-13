@@ -195,7 +195,7 @@ Add Swagger annotations above handler functions:
 // GetUser godoc
 // @Summary      Get user by ID
 // @Description  Retrieve user information by unique identifier
-// @Tags         users
+// @Tags         Users
 // @Produce      json
 // @Param        id   path      string  true  "User ID"
 // @Success      200  {object}  models.UserResponse  "User found"

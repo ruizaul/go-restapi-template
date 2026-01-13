@@ -25,7 +25,7 @@ func NewAuthHandler(service *services.AuthService) *AuthHandler {
 // Register godoc
 // @Summary      Register a new user
 // @Description  Create a new user account with email and password
-// @Tags         auth
+// @Tags         Auth
 // @Accept       json
 // @Produce      json
 // @Param        request  body      models.RegisterRequest  true  "Registration data"
@@ -67,7 +67,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 // Login godoc
 // @Summary      Login user
 // @Description  Authenticate user with email and password
-// @Tags         auth
+// @Tags         Auth
 // @Accept       json
 // @Produce      json
 // @Param        request  body      models.LoginRequest  true  "Login credentials"
@@ -102,7 +102,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 // Refresh godoc
 // @Summary      Refresh tokens
 // @Description  Get new access and refresh tokens using a valid refresh token
-// @Tags         auth
+// @Tags         Auth
 // @Accept       json
 // @Produce      json
 // @Param        request  body      models.RefreshRequest  true  "Refresh token"
@@ -149,7 +149,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 // GetProfile godoc
 // @Summary      Get current user profile
 // @Description  Get the profile of the currently authenticated user
-// @Tags         auth
+// @Tags         Auth
 // @Produce      json
 // @Security     BearerAuth
 // @Success      200  {object}  models.ProfileResponse
@@ -180,7 +180,7 @@ func (h *AuthHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 // Logout godoc
 // @Summary      Logout user
 // @Description  Logout the current user (client should discard tokens)
-// @Tags         auth
+// @Tags         Auth
 // @Produce      json
 // @Security     BearerAuth
 // @Success      200  {object}  models.MessageResponse

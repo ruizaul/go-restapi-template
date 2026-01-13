@@ -72,7 +72,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Register routes
-	registerRoutes(mux, logger, cfg)
+	registerRoutes(mux, cfg)
 
 	// Setup middleware chain
 	handler := setupMiddleware(mux, logger, cfg)
@@ -224,7 +224,7 @@ func setupMiddleware(handler http.Handler, logger *slog.Logger, cfg *config.Conf
 }
 
 // registerRoutes registers all application routes
-func registerRoutes(mux *http.ServeMux, logger *slog.Logger, cfg *config.Config) {
+func registerRoutes(mux *http.ServeMux, cfg *config.Config) {
 	// Health check endpoint (checks database connectivity)
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		health := map[string]any{

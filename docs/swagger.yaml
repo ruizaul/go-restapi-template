@@ -195,7 +195,7 @@ paths:
             $ref: '#/definitions/response.Response'
       summary: Login user
       tags:
-      - auth
+      - Auth
   /auth/logout:
     post:
       description: Logout the current user (client should discard tokens)
@@ -214,7 +214,7 @@ paths:
       - BearerAuth: []
       summary: Logout user
       tags:
-      - auth
+      - Auth
   /auth/me:
     get:
       description: Get the profile of the currently authenticated user
@@ -237,7 +237,7 @@ paths:
       - BearerAuth: []
       summary: Get current user profile
       tags:
-      - auth
+      - Auth
   /auth/refresh:
     post:
       consumes:
@@ -271,7 +271,7 @@ paths:
             $ref: '#/definitions/response.Response'
       summary: Refresh tokens
       tags:
-      - auth
+      - Auth
   /auth/register:
     post:
       consumes:
@@ -305,7 +305,7 @@ paths:
             $ref: '#/definitions/response.Response'
       summary: Register a new user
       tags:
-      - auth
+      - Auth
   /users:
     get:
       description: Get a paginated list of users
@@ -337,7 +337,7 @@ paths:
       - BearerAuth: []
       summary: List all users
       tags:
-      - users
+      - Users
     post:
       consumes:
       - application/json
@@ -376,7 +376,7 @@ paths:
       - BearerAuth: []
       summary: Create a new user
       tags:
-      - users
+      - Users
   /users/{id}:
     delete:
       description: Soft delete a user by ID
@@ -411,7 +411,7 @@ paths:
       - BearerAuth: []
       summary: Delete a user
       tags:
-      - users
+      - Users
     get:
       description: Retrieve a user by their unique identifier
       parameters:
@@ -443,7 +443,7 @@ paths:
       - BearerAuth: []
       summary: Get user by ID
       tags:
-      - users
+      - Users
     patch:
       consumes:
       - application/json
@@ -491,7 +491,7 @@ paths:
       - BearerAuth: []
       summary: Update a user
       tags:
-      - users
+      - Users
 produces:
 - application/json
 securityDefinitions:

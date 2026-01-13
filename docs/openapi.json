@@ -19,7 +19,7 @@
             "post": {
                 "description": "Authenticate user with email and password",
                 "tags": [
-                    "auth"
+                    "Auth"
                 ],
                 "summary": "Login user",
                 "requestBody": {
@@ -86,7 +86,7 @@
                 ],
                 "description": "Logout the current user (client should discard tokens)",
                 "tags": [
-                    "auth"
+                    "Auth"
                 ],
                 "summary": "Logout user",
                 "responses": {
@@ -122,7 +122,7 @@
                 ],
                 "description": "Get the profile of the currently authenticated user",
                 "tags": [
-                    "auth"
+                    "Auth"
                 ],
                 "summary": "Get current user profile",
                 "responses": {
@@ -163,7 +163,7 @@
             "post": {
                 "description": "Get new access and refresh tokens using a valid refresh token",
                 "tags": [
-                    "auth"
+                    "Auth"
                 ],
                 "summary": "Refresh tokens",
                 "requestBody": {
@@ -225,7 +225,7 @@
             "post": {
                 "description": "Create a new user account with email and password",
                 "tags": [
-                    "auth"
+                    "Auth"
                 ],
                 "summary": "Register a new user",
                 "requestBody": {
@@ -292,7 +292,7 @@
                 ],
                 "description": "Get a paginated list of users",
                 "tags": [
-                    "users"
+                    "Users"
                 ],
                 "summary": "List all users",
                 "parameters": [
@@ -354,7 +354,7 @@
                 ],
                 "description": "Create a new user with email and name",
                 "tags": [
-                    "users"
+                    "Users"
                 ],
                 "summary": "Create a new user",
                 "requestBody": {
@@ -431,7 +431,7 @@
                 ],
                 "description": "Retrieve a user by their unique identifier",
                 "tags": [
-                    "users"
+                    "Users"
                 ],
                 "summary": "Get user by ID",
                 "parameters": [
@@ -496,7 +496,7 @@
                 ],
                 "description": "Soft delete a user by ID",
                 "tags": [
-                    "users"
+                    "Users"
                 ],
                 "summary": "Delete a user",
                 "parameters": [
@@ -564,7 +564,7 @@
                 ],
                 "description": "Update user's email and/or name",
                 "tags": [
-                    "users"
+                    "Users"
                 ],
                 "summary": "Update a user",
                 "parameters": [

@@ -26,7 +26,7 @@ func NewUserHandler(service *services.UserService) *UserHandler {
 // List godoc
 // @Summary      List all users
 // @Description  Get a paginated list of users
-// @Tags         users
+// @Tags         Users
 // @Produce      json
 // @Security     BearerAuth
 // @Param        limit   query     int  false  "Limit (default 20, max 100)"
@@ -55,7 +55,7 @@ func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
 // GetByID godoc
 // @Summary      Get user by ID
 // @Description  Retrieve a user by their unique identifier
-// @Tags         users
+// @Tags         Users
 // @Produce      json
 // @Security     BearerAuth
 // @Param        id   path      string  true  "User ID (UUID)"
@@ -88,7 +88,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // Create godoc
 // @Summary      Create a new user
 // @Description  Create a new user with email and name
-// @Tags         users
+// @Tags         Users
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
@@ -132,7 +132,7 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 // Update godoc
 // @Summary      Update a user
 // @Description  Update user's email and/or name
-// @Tags         users
+// @Tags         Users
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
@@ -179,7 +179,7 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 // Delete godoc
 // @Summary      Delete a user
 // @Description  Soft delete a user by ID
-// @Tags         users
+// @Tags         Users
 // @Produce      json
 // @Security     BearerAuth
 // @Param        id   path      string  true  "User ID (UUID)"
