@@ -29,27 +29,237 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/test/hello": {
+        "/users": {
             "get": {
-                "description": "Returns a hello world message",
+                "description": "Get a paginated list of users",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "test"
+                    "users"
                 ],
-                "summary": "Hello World Example",
+                "summary": "List all users",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "Success response with hello data",
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.HelloResponse"
+                            "$ref": "#/definitions/models.UsersListResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new user with email and name",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Create a new user",
+                "parameters": [
+                    {
+                        "description": "User data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.UserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}": {
+            "get": {
+                "description": "Retrieve a user by their unique identifier",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get user by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.UserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Soft delete a user by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Delete a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Update user's email and/or name",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "User data to update",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.UserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -57,58 +267,90 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.ErrorResponse": {
-            "description": "Server error response",
+        "models.CreateUserRequest": {
             "type": "object",
             "properties": {
-                "code": {
-                    "description": "Code is the HTTP status code",
-                    "type": "integer",
-                    "example": 500
+                "email": {
+                    "type": "string"
                 },
-                "message": {
-                    "description": "Message describes the server error",
-                    "type": "string",
-                    "example": "Internal server error"
-                },
-                "status": {
-                    "description": "Status is always \"error\" for server errors",
-                    "type": "string",
-                    "example": "error"
+                "name": {
+                    "type": "string"
                 }
             }
         },
-        "models.HelloData": {
+        "models.UpdateUserRequest": {
             "type": "object",
             "properties": {
-                "example": {
-                    "description": "Example indicates if this is an example endpoint",
-                    "type": "boolean",
-                    "example": true
+                "email": {
+                    "type": "string"
                 },
-                "message": {
-                    "description": "Message is the greeting message",
-                    "type": "string",
-                    "example": "Hello World! This is an example endpoint"
+                "name": {
+                    "type": "string"
                 }
             }
         },
-        "models.HelloResponse": {
-            "description": "Success response with hello data",
+        "models.User": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.UserResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "description": "Data contains the response payload",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.HelloData"
-                        }
-                    ]
+                    "$ref": "#/definitions/models.User"
                 },
                 "status": {
-                    "description": "Status is always \"success\" for successful responses",
                     "type": "string",
                     "example": "success"
+                }
+            }
+        },
+        "models.UsersListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.User"
+                    }
+                },
+                "status": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "response.Response": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {},
+                "message": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         }
@@ -126,7 +368,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0.0",
-	Host:             "localhost:8080",
+	Host:             "",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Go API Template",

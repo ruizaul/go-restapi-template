@@ -1,4 +1,4 @@
-.PHONY: help run build test lint clean swagger dev migrate-up migrate-down migrate-create migrate-status migrate-force
+.PHONY: help run build test test-coverage lint clean swagger dev migrate-up migrate-down migrate-create migrate-status migrate-force
 
 # Database connection string for migrations
 # Port 5433 to avoid conflict with local PostgreSQL (Docker maps 5433->5432)
@@ -30,6 +30,13 @@ build: swagger ## Build binary (regenerates docs)
 
 test: ## Run tests
 	@go test -v ./...
+
+test-coverage: ## Run tests with coverage report
+	@echo "Running tests with coverage..."
+	@go test -coverprofile=coverage.out ./...
+	@go tool cover -html=coverage.out -o coverage.html
+	@go tool cover -func=coverage.out | tail -1
+	@echo "Coverage report generated: coverage.html"
 
 lint: ## Check code quality
 	@golangci-lint run

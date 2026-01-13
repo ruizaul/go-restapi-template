@@ -1,17 +1,23 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
-	_ "github.com/lib/pq"
-
 	scalargo "github.com/bdpiprava/scalar-go"
+	"github.com/joho/godotenv"
 
-	"go-api-template/internal/test"
+	"go-api-template/database"
+	"go-api-template/internal/users"
+	"go-api-template/pkg/config"
+	"go-api-template/pkg/middleware"
 	"go-api-template/pkg/response"
 
 	_ "go-api-template/docs"
@@ -28,7 +34,6 @@ import (
 //	@license.name	MIT
 //	@license.url	https://opensource.org/licenses/MIT
 
-//	@host		localhost:8080
 //	@BasePath	/
 
 //	@securityDefinitions.apikey	BearerAuth
@@ -39,61 +44,171 @@ import (
 //	@accept		json
 //	@produce	json
 
-// responseWriter wraps http.ResponseWriter to capture status code
-type responseWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
-
-func newResponseWriter(w http.ResponseWriter) *responseWriter {
-	return &responseWriter{w, http.StatusOK}
-}
-
-func (rw *responseWriter) WriteHeader(code int) {
-	rw.statusCode = code
-	rw.ResponseWriter.WriteHeader(code)
-}
-
-// loggingMiddleware logs all HTTP requests
-func loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-
-		// Wrap response writer to capture status code
-		wrapped := newResponseWriter(w)
-
-		// Process request
-		next.ServeHTTP(wrapped, r)
-
-		// Log the request
-		log.Printf(
-			"[%s] %s %s %d %v",
-			r.Method,
-			r.URL.Path,
-			r.RemoteAddr,
-			wrapped.statusCode,
-			time.Since(start),
-		)
-	})
-}
-
 func main() {
-	// Configure logger
-	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
-	log.SetPrefix("[API] ")
+	// Load .env file if it exists (ignore error if not found)
+	_ = godotenv.Load() //nolint:errcheck // .env file is optional
+
+	// Load configuration
+	cfg := config.Load()
+
+	// Setup structured logger
+	logger := setupLogger(cfg)
+
+	// Connect to database
+	if err := database.Connect(); err != nil {
+		logger.Error("failed to connect to database", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	defer func() {
+		if err := database.Close(); err != nil {
+			logger.Error("error closing database connection", slog.String("error", err.Error()))
+		}
+	}()
+
+	logger.Info("database connected successfully")
 
 	// Create HTTP router
 	mux := http.NewServeMux()
 
-	// Health check endpoint
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
-		response.Success(w, map[string]string{"message": "Server is running"})
+	// Register routes
+	registerRoutes(mux, logger, cfg)
+
+	// Setup middleware chain
+	handler := setupMiddleware(mux, logger, cfg)
+
+	// Create HTTP server with production-ready timeouts
+	server := &http.Server{
+		Addr:              ":" + cfg.Server.Port,
+		Handler:           handler,
+		ReadTimeout:       cfg.Server.ReadTimeout,
+		WriteTimeout:      cfg.Server.WriteTimeout,
+		IdleTimeout:       cfg.Server.IdleTimeout,
+		ReadHeaderTimeout: cfg.Server.ReadHeaderTimeout,
+	}
+
+	// Start server in a goroutine
+	go func() {
+		logger.Info("server starting",
+			slog.String("port", cfg.Server.Port),
+			slog.String("docs", fmt.Sprintf("http://localhost:%s/docs", cfg.Server.Port)),
+			slog.String("health", fmt.Sprintf("http://localhost:%s/health", cfg.Server.Port)),
+		)
+
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Error("server error", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+	}()
+
+	// Wait for interrupt signal for graceful shutdown
+	gracefulShutdown(server, logger, cfg.Server.ShutdownTimeout)
+}
+
+// setupLogger creates a structured logger based on configuration
+func setupLogger(cfg *config.Config) *slog.Logger {
+	var handler slog.Handler
+
+	// Set log level
+	var level slog.Level
+	switch cfg.Log.Level {
+	case "debug":
+		level = slog.LevelDebug
+	case "warn":
+		level = slog.LevelWarn
+	case "error":
+		level = slog.LevelError
+	default:
+		level = slog.LevelInfo
+	}
+
+	opts := &slog.HandlerOptions{
+		Level:     level,
+		AddSource: cfg.Log.AddSource,
+	}
+
+	// Set log format
+	if cfg.Log.Format == "json" || cfg.IsProduction() {
+		handler = slog.NewJSONHandler(os.Stdout, opts)
+	} else {
+		handler = slog.NewTextHandler(os.Stdout, opts)
+	}
+
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+
+	return logger
+}
+
+// setupMiddleware chains all middleware in the correct order
+func setupMiddleware(handler http.Handler, logger *slog.Logger, cfg *config.Config) http.Handler {
+	// Build middleware chain (order matters - first is outermost)
+	middlewares := []func(http.Handler) http.Handler{
+		middleware.Recovery(logger),                         // Recover from panics first
+		middleware.Logging(logger),                          // Log all requests
+		middleware.CORS(middleware.CORSConfig{               // Handle CORS
+			AllowedOrigins:   cfg.CORS.AllowedOrigins,
+			AllowedMethods:   cfg.CORS.AllowedMethods,
+			AllowedHeaders:   cfg.CORS.AllowedHeaders,
+			AllowCredentials: cfg.CORS.AllowCredentials,
+			MaxAge:           cfg.CORS.MaxAge,
+		}),
+	}
+
+	// Add rate limiting if enabled
+	if cfg.RateLimit.Enabled {
+		middlewares = append(middlewares, middleware.RateLimit(middleware.RateLimitConfig{
+			Rate:            cfg.RateLimit.Rate,
+			Window:          cfg.RateLimit.Window,
+			CleanupInterval: 5 * time.Minute,
+		}))
+	}
+
+	return middleware.Chain(handler, middlewares...)
+}
+
+// registerRoutes registers all application routes
+func registerRoutes(mux *http.ServeMux, logger *slog.Logger, _ *config.Config) {
+	// Health check endpoint (checks database connectivity)
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		health := map[string]any{
+			"status":    "healthy",
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		}
+
+		// Check database health
+		if err := database.Health(r.Context()); err != nil {
+			logger.Warn("health check: database unhealthy", slog.String("error", err.Error()))
+			health["status"] = "unhealthy"
+			health["database"] = map[string]string{
+				"status": "unhealthy",
+				"error":  err.Error(),
+			}
+			response.Error(w, http.StatusServiceUnavailable, "Service unhealthy")
+			return
+		}
+
+		health["database"] = map[string]string{"status": "healthy"}
+		response.Success(w, health)
+	})
+
+	// Liveness probe (simple check - server is running)
+	mux.HandleFunc("GET /health/live", func(w http.ResponseWriter, _ *http.Request) {
+		response.Success(w, map[string]string{"status": "alive"})
+	})
+
+	// Readiness probe (checks if ready to accept traffic)
+	mux.HandleFunc("GET /health/ready", func(w http.ResponseWriter, r *http.Request) {
+		if err := database.Health(r.Context()); err != nil {
+			response.Error(w, http.StatusServiceUnavailable, "Not ready")
+			return
+		}
+		response.Success(w, map[string]string{"status": "ready"})
 	})
 
 	// Serve swagger.json directly
-	mux.HandleFunc("GET /docs/swagger.json", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("GET /docs/swagger.json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		http.ServeFile(w, nil, "./docs/swagger.json")
+		http.ServeFile(w, r, "./docs/swagger.json")
 	})
 
 	// API documentation with Scalar
@@ -129,30 +244,45 @@ func main() {
 	})
 
 	// Register feature routes
-	test.RegisterRoutes(mux)
+	users.RegisterRoutes(mux, database.DB)
+}
 
-	// Get port from environment
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+// gracefulShutdown handles graceful server shutdown on interrupt signals
+func gracefulShutdown(server *http.Server, logger *slog.Logger, timeout time.Duration) {
+	// Create channel to listen for signals
+	quit := make(chan os.Signal, 1)
+
+	// Notify on SIGINT (Ctrl+C) and SIGTERM (Docker/K8s stop)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Block until signal received
+	sig := <-quit
+	logger.Info("shutdown signal received", slog.String("signal", sig.String()))
+
+	// Create context with timeout for shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+
+	// Attempt graceful shutdown
+	logger.Info("shutting down server", slog.Duration("timeout", timeout))
+
+	var shutdownErr error
+	if err := server.Shutdown(ctx); err != nil {
+		logger.Error("server forced to shutdown", slog.String("error", err.Error()))
+		shutdownErr = err
 	}
 
-	// Create HTTP server with production-ready timeouts
-	server := &http.Server{
-		Addr:              ":" + port,
-		Handler:           loggingMiddleware(mux),
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      15 * time.Second,
-		IdleTimeout:       60 * time.Second,
-		ReadHeaderTimeout: 5 * time.Second,
+	// Cancel context after shutdown attempt
+	cancel()
+
+	// Close database connection
+	if err := database.Close(); err != nil {
+		logger.Error("error closing database", slog.String("error", err.Error()))
 	}
 
-	log.Printf("🚀 Server starting on http://localhost:%s", port)
-	log.Printf("📚 API Documentation: http://localhost:%s/docs", port)
-	log.Printf("💚 Health Check: http://localhost:%s/health", port)
-
-	if err := server.ListenAndServe(); err != nil {
-		log.Printf("❌ Server error: %v", err)
+	if shutdownErr != nil {
+		logger.Error("shutdown completed with errors")
 		os.Exit(1)
 	}
+
+	logger.Info("server shutdown complete")
 }

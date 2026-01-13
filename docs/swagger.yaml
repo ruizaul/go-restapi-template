@@ -2,46 +2,63 @@ basePath: /
 consumes:
 - application/json
 definitions:
-  models.ErrorResponse:
-    description: Server error response
+  models.CreateUserRequest:
     properties:
-      code:
-        description: Code is the HTTP status code
-        example: 500
-        type: integer
-      message:
-        description: Message describes the server error
-        example: Internal server error
+      email:
         type: string
-      status:
-        description: Status is always "error" for server errors
-        example: error
+      name:
         type: string
     type: object
-  models.HelloData:
+  models.UpdateUserRequest:
     properties:
-      example:
-        description: Example indicates if this is an example endpoint
-        example: true
-        type: boolean
-      message:
-        description: Message is the greeting message
-        example: Hello World! This is an example endpoint
+      email:
+        type: string
+      name:
         type: string
     type: object
-  models.HelloResponse:
-    description: Success response with hello data
+  models.User:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.UserResponse:
     properties:
       data:
-        allOf:
-        - $ref: '#/definitions/models.HelloData'
-        description: Data contains the response payload
+        $ref: '#/definitions/models.User'
       status:
-        description: Status is always "success" for successful responses
         example: success
         type: string
     type: object
-host: localhost:8080
+  models.UsersListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.User'
+        type: array
+      status:
+        example: success
+        type: string
+    type: object
+  response.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      message:
+        type: string
+      status:
+        type: string
+    type: object
 info:
   contact:
     email: support@example.com
@@ -54,23 +71,162 @@ info:
   title: Go API Template
   version: 1.0.0
 paths:
-  /test/hello:
+  /users:
     get:
-      description: Returns a hello world message
+      description: Get a paginated list of users
+      parameters:
+      - description: Limit (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
         "200":
-          description: Success response with hello data
+          description: OK
           schema:
-            $ref: '#/definitions/models.HelloResponse'
+            $ref: '#/definitions/models.UsersListResponse'
         "500":
-          description: Internal server error
+          description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
-      summary: Hello World Example
+            $ref: '#/definitions/response.Response'
+      summary: List all users
       tags:
-      - test
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with email and name
+      parameters:
+      - description: User data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Create a new user
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      description: Soft delete a user by ID
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Delete a user
+      tags:
+      - users
+    get:
+      description: Retrieve a user by their unique identifier
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get user by ID
+      tags:
+      - users
+    patch:
+      consumes:
+      - application/json
+      description: Update user's email and/or name
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User data to update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Update a user
+      tags:
+      - users
 produces:
 - application/json
 securityDefinitions:

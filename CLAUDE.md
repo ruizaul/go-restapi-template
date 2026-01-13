@@ -15,6 +15,9 @@ internal/             # Private application code (features)
       ├── models/     # Data structures
       └── routes.go   # Route registration
 pkg/                  # Public shared utilities
+  ├── config/         # Centralized configuration management
+  ├── middleware/     # HTTP middleware (CORS, logging, recovery, rate limit)
+  └── response/       # JSend response helpers
 migrations/           # SQL database migrations (golang-migrate)
 docs/                 # Auto-generated API docs (DO NOT EDIT)
 ```
@@ -28,6 +31,7 @@ make run      # Run server once (regenerates docs)
 make build    # Compile binary to bin/server
 make swagger  # Regenerate API documentation only
 make test     # Run all tests
+make test-coverage  # Run tests with coverage report
 make lint     # Code quality checks (REQUIRED before commit)
 make clean    # Remove build artifacts
 

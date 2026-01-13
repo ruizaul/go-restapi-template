@@ -1,21 +1,20 @@
 -- 000001_create_users_table.up.sql
--- Example migration: Creates the users table
+-- Creates the users table
 
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMP WITH TIME ZONE
 );
 
--- Index for email lookups (common query pattern)
+-- Index for email lookups
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
--- Index for active users filter
-CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active) WHERE is_active = true;
+-- Index for non-deleted users
+CREATE INDEX IF NOT EXISTS idx_users_deleted_at ON users(deleted_at) WHERE deleted_at IS NULL;
 
 -- Trigger to auto-update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()

@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -16,7 +17,7 @@ var DB *sql.DB
 func Connect() error {
 	var connStr string
 
-	// Check if DATABASE_URL is set (used in production/Cloud Run)
+	// Check if DATABASE_URL is set (used in production)
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL != "" {
 		// Use DATABASE_URL directly (production mode)
@@ -34,7 +35,7 @@ func Connect() error {
 			host = "localhost"
 		}
 		if port == "" {
-			port = "5432"
+			port = "5433"
 		}
 		if sslmode == "" {
 			sslmode = "disable"
@@ -60,6 +61,24 @@ func Connect() error {
 	// Test connection
 	if err = DB.Ping(); err != nil {
 		return fmt.Errorf("error connecting to database: %w", err)
+	}
+
+	return nil
+}
+
+// Health checks database connectivity with a timeout
+// Returns nil if healthy, error otherwise
+func Health(ctx context.Context) error {
+	if DB == nil {
+		return fmt.Errorf("database connection not initialized")
+	}
+
+	// Create a context with timeout if none provided
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	if err := DB.PingContext(ctx); err != nil {
+		return fmt.Errorf("database ping failed: %w", err)
 	}
 
 	return nil
