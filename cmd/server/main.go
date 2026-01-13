@@ -216,7 +216,6 @@ func registerRoutes(mux *http.ServeMux, logger *slog.Logger, _ *config.Config) {
 		html, err := scalargo.NewV2(
 			scalargo.WithSpecDir("./docs"),
 			scalargo.WithBaseFileName("openapi.json"),
-			scalargo.WithTheme(scalargo.ThemeAlternate),
 			scalargo.WithDarkMode(),
 			scalargo.WithLayout(scalargo.LayoutModern),
 			scalargo.WithMetaDataOpts(
