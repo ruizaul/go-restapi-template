@@ -44,6 +44,41 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	return n, err
 }
 
+// shouldSkipLogging returns true if the path should not be logged
+func shouldSkipLogging(path string) bool {
+	skipPaths := []string{
+		"/health",
+		"/health/live",
+		"/health/ready",
+		"/docs",
+		"/docs/swagger.json",
+		"/favicon.ico",
+	}
+
+	for _, skip := range skipPaths {
+		if path == skip {
+			return true
+		}
+	}
+	return false
+}
+
+// getStatusColor returns ANSI color code based on HTTP status
+func getStatusColor(status int) string {
+	switch {
+	case status >= 500:
+		return "\033[31m" // Red
+	case status >= 400:
+		return "\033[33m" // Yellow
+	case status >= 300:
+		return "\033[36m" // Cyan
+	case status >= 200:
+		return "\033[32m" // Green
+	default:
+		return "\033[0m" // Reset
+	}
+}
+
 // Logging returns a middleware that logs HTTP requests with structured logging.
 // It adds a unique request ID to each request and includes it in logs.
 func Logging(logger *slog.Logger) func(http.Handler) http.Handler {
@@ -54,7 +89,7 @@ func Logging(logger *slog.Logger) func(http.Handler) http.Handler {
 			// Get or generate request ID
 			requestID := r.Header.Get(RequestIDHeader)
 			if requestID == "" {
-				requestID = uuid.New().String()
+				requestID = uuid.New().String()[:8] // Use short ID for cleaner logs
 			}
 
 			// Add request ID to response header
@@ -70,21 +105,58 @@ func Logging(logger *slog.Logger) func(http.Handler) http.Handler {
 			// Process request
 			next.ServeHTTP(wrapped, r)
 
+			// Skip logging for health checks and static files
+			if shouldSkipLogging(r.URL.Path) {
+				return
+			}
+
 			// Calculate duration
 			duration := time.Since(start)
 
-			// Log the request
-			logger.Info("http request",
-				slog.String("request_id", requestID),
+			// Build query string info
+			queryInfo := ""
+			if r.URL.RawQuery != "" {
+				queryInfo = "?" + r.URL.RawQuery
+			}
+
+			// Format path with query
+			fullPath := r.URL.Path + queryInfo
+
+			// Log based on status code severity
+			statusColor := getStatusColor(wrapped.statusCode)
+			resetColor := "\033[0m"
+
+			// Create log attributes
+			attrs := []slog.Attr{
+				slog.String("id", requestID),
 				slog.String("method", r.Method),
-				slog.String("path", r.URL.Path),
-				slog.String("query", r.URL.RawQuery),
-				slog.String("remote_addr", r.RemoteAddr),
-				slog.String("user_agent", r.UserAgent()),
+				slog.String("path", fullPath),
 				slog.Int("status", wrapped.statusCode),
-				slog.Int("bytes", wrapped.bytesWritten),
-				slog.Duration("duration", duration),
-			)
+				slog.String("duration", duration.Round(time.Millisecond).String()),
+			}
+
+			// Add bytes only if significant
+			if wrapped.bytesWritten > 0 {
+				attrs = append(attrs, slog.Int("bytes", wrapped.bytesWritten))
+			}
+
+			// Log at appropriate level based on status
+			logMessage := "→ " + r.Method + " " + fullPath + " " +
+				statusColor + http.StatusText(wrapped.statusCode) + resetColor
+
+			switch {
+			case wrapped.statusCode >= 500:
+				logger.Error(logMessage, slog.Any("attrs", attrs))
+			case wrapped.statusCode >= 400:
+				logger.Warn(logMessage, slog.Any("attrs", attrs))
+			default:
+				// Clean, simple format for successful requests
+				logger.Info(logMessage,
+					slog.String("id", requestID),
+					slog.Int("status", wrapped.statusCode),
+					slog.String("duration", duration.Round(time.Millisecond).String()),
+				)
+			}
 		})
 	}
 }

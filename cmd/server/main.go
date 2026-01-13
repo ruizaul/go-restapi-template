@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -57,16 +59,14 @@ func main() {
 
 	// Connect to database
 	if err := database.Connect(); err != nil {
-		logger.Error("failed to connect to database", slog.String("error", err.Error()))
+		logger.Error("database connection failed", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
 	defer func() {
 		if err := database.Close(); err != nil {
-			logger.Error("error closing database connection", slog.String("error", err.Error()))
+			logger.Error("database close failed", slog.String("error", err.Error()))
 		}
 	}()
-
-	logger.Info("database connected successfully")
 
 	// Create HTTP router
 	mux := http.NewServeMux()
@@ -89,20 +89,73 @@ func main() {
 
 	// Start server in a goroutine
 	go func() {
-		logger.Info("server starting",
+		logger.Info("🚀 Server ready",
 			slog.String("port", cfg.Server.Port),
 			slog.String("docs", fmt.Sprintf("http://localhost:%s/docs", cfg.Server.Port)),
-			slog.String("health", fmt.Sprintf("http://localhost:%s/health", cfg.Server.Port)),
 		)
 
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("server error", slog.String("error", err.Error()))
+			logger.Error("server failed", slog.String("error", err.Error()))
 			os.Exit(1)
 		}
 	}()
 
 	// Wait for interrupt signal for graceful shutdown
 	gracefulShutdown(server, logger, cfg.Server.ShutdownTimeout)
+}
+
+// customTextHandler creates a cleaner text handler for development
+type customTextHandler struct {
+	w     io.Writer
+	level slog.Level
+}
+
+func (h *customTextHandler) Enabled(_ context.Context, level slog.Level) bool {
+	return level >= h.level
+}
+
+func (h *customTextHandler) Handle(_ context.Context, r slog.Record) error {
+	// Get level with color
+	levelStr := ""
+	switch r.Level {
+	case slog.LevelDebug:
+		levelStr = "\033[36mDEBUG\033[0m"
+	case slog.LevelInfo:
+		levelStr = "\033[32mINFO\033[0m "
+	case slog.LevelWarn:
+		levelStr = "\033[33mWARN\033[0m "
+	case slog.LevelError:
+		levelStr = "\033[31mERROR\033[0m"
+	}
+
+	// Build log line
+	var buf strings.Builder
+	buf.WriteString(r.Time.Format("15:04:05"))
+	buf.WriteString(" ")
+	buf.WriteString(levelStr)
+	buf.WriteString(" ")
+	buf.WriteString(r.Message)
+
+	// Add attributes
+	r.Attrs(func(a slog.Attr) bool {
+		buf.WriteString(" ")
+		buf.WriteString(a.Key)
+		buf.WriteString("=")
+		buf.WriteString(a.Value.String())
+		return true
+	})
+
+	buf.WriteString("\n")
+	_, err := h.w.Write([]byte(buf.String()))
+	return err
+}
+
+func (h *customTextHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return h
+}
+
+func (h *customTextHandler) WithGroup(name string) slog.Handler {
+	return h
 }
 
 // setupLogger creates a structured logger based on configuration
@@ -122,16 +175,19 @@ func setupLogger(cfg *config.Config) *slog.Logger {
 		level = slog.LevelInfo
 	}
 
-	opts := &slog.HandlerOptions{
-		Level:     level,
-		AddSource: cfg.Log.AddSource,
-	}
-
 	// Set log format
 	if cfg.Log.Format == "json" || cfg.IsProduction() {
+		opts := &slog.HandlerOptions{
+			Level:     level,
+			AddSource: cfg.Log.AddSource,
+		}
 		handler = slog.NewJSONHandler(os.Stdout, opts)
 	} else {
-		handler = slog.NewTextHandler(os.Stdout, opts)
+		// Use custom text handler for cleaner development logs
+		handler = &customTextHandler{
+			w:     os.Stdout,
+			level: level,
+		}
 	}
 
 	logger := slog.New(handler)
@@ -178,7 +234,6 @@ func registerRoutes(mux *http.ServeMux, logger *slog.Logger, cfg *config.Config)
 
 		// Check database health
 		if err := database.Health(r.Context()); err != nil {
-			logger.Warn("health check: database unhealthy", slog.String("error", err.Error()))
 			health["status"] = "unhealthy"
 			health["database"] = map[string]string{
 				"status": "unhealthy",
@@ -260,17 +315,14 @@ func gracefulShutdown(server *http.Server, logger *slog.Logger, timeout time.Dur
 
 	// Block until signal received
 	sig := <-quit
-	logger.Info("shutdown signal received", slog.String("signal", sig.String()))
+	logger.Info("⏹️  Shutting down", slog.String("signal", sig.String()))
 
 	// Create context with timeout for shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 
-	// Attempt graceful shutdown
-	logger.Info("shutting down server", slog.Duration("timeout", timeout))
-
 	var shutdownErr error
 	if err := server.Shutdown(ctx); err != nil {
-		logger.Error("server forced to shutdown", slog.String("error", err.Error()))
+		logger.Error("shutdown error", slog.String("error", err.Error()))
 		shutdownErr = err
 	}
 
@@ -279,13 +331,12 @@ func gracefulShutdown(server *http.Server, logger *slog.Logger, timeout time.Dur
 
 	// Close database connection
 	if err := database.Close(); err != nil {
-		logger.Error("error closing database", slog.String("error", err.Error()))
+		logger.Error("database close error", slog.String("error", err.Error()))
 	}
 
 	if shutdownErr != nil {
-		logger.Error("shutdown completed with errors")
 		os.Exit(1)
 	}
 
-	logger.Info("server shutdown complete")
+	logger.Info("✓ Shutdown complete")
 }
