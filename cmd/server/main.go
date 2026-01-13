@@ -15,6 +15,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"go-api-template/database"
+	"go-api-template/internal/auth"
 	"go-api-template/internal/users"
 	"go-api-template/pkg/config"
 	"go-api-template/pkg/middleware"
@@ -167,7 +168,7 @@ func setupMiddleware(handler http.Handler, logger *slog.Logger, cfg *config.Conf
 }
 
 // registerRoutes registers all application routes
-func registerRoutes(mux *http.ServeMux, logger *slog.Logger, _ *config.Config) {
+func registerRoutes(mux *http.ServeMux, logger *slog.Logger, cfg *config.Config) {
 	// Health check endpoint (checks database connectivity)
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		health := map[string]any{
@@ -242,8 +243,11 @@ func registerRoutes(mux *http.ServeMux, logger *slog.Logger, _ *config.Config) {
 		fmt.Fprint(w, html)
 	})
 
-	// Register feature routes
-	users.RegisterRoutes(mux, database.DB)
+	// Register auth routes (returns jwtService for protecting other routes)
+	jwtService := auth.RegisterRoutes(mux, database.DB, cfg)
+
+	// Register feature routes (protected with auth)
+	users.RegisterRoutes(mux, database.DB, jwtService)
 }
 
 // gracefulShutdown handles graceful server shutdown on interrupt signals

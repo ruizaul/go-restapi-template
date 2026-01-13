@@ -2,11 +2,102 @@ basePath: /
 consumes:
 - application/json
 definitions:
+  models.AuthRespData:
+    properties:
+      tokens:
+        $ref: '#/definitions/models.TokenPair'
+      user:
+        $ref: '#/definitions/models.AuthUser'
+    type: object
+  models.AuthResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.AuthRespData'
+      status:
+        example: success
+        type: string
+    type: object
+  models.AuthUser:
+    properties:
+      created_at:
+        type: string
+      email:
+        example: user@example.com
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      name:
+        example: John Doe
+        type: string
+      updated_at:
+        type: string
+    type: object
   models.CreateUserRequest:
     properties:
       email:
         type: string
       name:
+        type: string
+    type: object
+  models.LoginRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: securepassword123
+        type: string
+    type: object
+  models.MessageResponse:
+    properties:
+      data:
+        additionalProperties:
+          type: string
+        type: object
+      status:
+        example: success
+        type: string
+    type: object
+  models.ProfileResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.AuthUser'
+      status:
+        example: success
+        type: string
+    type: object
+  models.RefreshRequest:
+    properties:
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIs...
+        type: string
+    type: object
+  models.RegisterRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      name:
+        example: John Doe
+        type: string
+      password:
+        example: securepassword123
+        type: string
+    type: object
+  models.TokenPair:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIs...
+        type: string
+      expires_in:
+        example: 900
+        type: integer
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIs...
+        type: string
+      token_type:
+        example: Bearer
         type: string
     type: object
   models.UpdateUserRequest:
@@ -71,6 +162,150 @@ info:
   title: Go API Template
   version: 1.0.0
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with email and password
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Login user
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      description: Logout the current user (client should discard tokens)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Logout user
+      tags:
+      - auth
+  /auth/me:
+    get:
+      description: Get the profile of the currently authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ProfileResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Get new access and refresh tokens using a valid refresh token
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Refresh tokens
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account with email and password
+      parameters:
+      - description: Registration data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Register a new user
+      tags:
+      - auth
   /users:
     get:
       description: Get a paginated list of users
@@ -90,10 +325,16 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.UsersListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
       summary: List all users
       tags:
       - users
@@ -119,6 +360,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
         "409":
           description: Conflict
           schema:
@@ -127,6 +372,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
       summary: Create a new user
       tags:
       - users
@@ -148,6 +395,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
@@ -156,6 +407,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
       summary: Delete a user
       tags:
       - users
@@ -178,10 +431,16 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
             $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
       summary: Get user by ID
       tags:
       - users
@@ -212,6 +471,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
@@ -224,6 +487,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
       summary: Update a user
       tags:
       - users

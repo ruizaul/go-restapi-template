@@ -25,6 +25,9 @@ type Config struct {
 
 	// Logging configuration
 	Log LogConfig
+
+	// JWT configuration
+	JWT JWTConfig
 }
 
 // ServerConfig holds HTTP server configuration
@@ -123,6 +126,18 @@ type LogConfig struct {
 	AddSource bool
 }
 
+// JWTConfig holds JWT authentication configuration
+type JWTConfig struct {
+	// SecretKey is the secret key used to sign JWT tokens
+	SecretKey string
+
+	// AccessTokenTTL is the access token time-to-live in minutes
+	AccessTokenTTL int
+
+	// RefreshTokenTTL is the refresh token time-to-live in hours
+	RefreshTokenTTL int
+}
+
 // Load loads configuration from environment variables with defaults.
 func Load() *Config {
 	return &Config{
@@ -162,6 +177,11 @@ func Load() *Config {
 			Level:     getEnv("LOG_LEVEL", "info"),
 			Format:    getEnv("LOG_FORMAT", "json"),
 			AddSource: getBoolEnv("LOG_ADD_SOURCE", false),
+		},
+		JWT: JWTConfig{
+			SecretKey:       getEnv("JWT_SECRET_KEY", "your-super-secret-key-change-in-production"),
+			AccessTokenTTL:  getIntEnv("JWT_ACCESS_TOKEN_TTL", 15),  // 15 minutes
+			RefreshTokenTTL: getIntEnv("JWT_REFRESH_TOKEN_TTL", 168), // 7 days (168 hours)
 		},
 	}
 }

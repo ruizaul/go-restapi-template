@@ -28,9 +28,11 @@ func NewUserHandler(service *services.UserService) *UserHandler {
 // @Description  Get a paginated list of users
 // @Tags         users
 // @Produce      json
+// @Security     BearerAuth
 // @Param        limit   query     int  false  "Limit (default 20, max 100)"
 // @Param        offset  query     int  false  "Offset (default 0)"
 // @Success      200     {object}  models.UsersListResponse
+// @Failure      401     {object}  response.Response
 // @Failure      500     {object}  response.Response
 // @Router       /users [get]
 func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -55,9 +57,11 @@ func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
 // @Description  Retrieve a user by their unique identifier
 // @Tags         users
 // @Produce      json
+// @Security     BearerAuth
 // @Param        id   path      string  true  "User ID (UUID)"
 // @Success      200  {object}  models.UserResponse
 // @Failure      400  {object}  response.Response
+// @Failure      401  {object}  response.Response
 // @Failure      404  {object}  response.Response
 // @Router       /users/{id} [get]
 func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
@@ -87,9 +91,11 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Tags         users
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Param        request  body      models.CreateUserRequest  true  "User data"
 // @Success      201      {object}  models.UserResponse
 // @Failure      400      {object}  response.Response
+// @Failure      401      {object}  response.Response
 // @Failure      409      {object}  response.Response
 // @Failure      500      {object}  response.Response
 // @Router       /users [post]
@@ -129,10 +135,12 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 // @Tags         users
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Param        id       path      string                    true  "User ID (UUID)"
 // @Param        request  body      models.UpdateUserRequest  true  "User data to update"
 // @Success      200      {object}  models.UserResponse
 // @Failure      400      {object}  response.Response
+// @Failure      401      {object}  response.Response
 // @Failure      404      {object}  response.Response
 // @Failure      409      {object}  response.Response
 // @Failure      500      {object}  response.Response
@@ -173,9 +181,11 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 // @Description  Soft delete a user by ID
 // @Tags         users
 // @Produce      json
+// @Security     BearerAuth
 // @Param        id   path      string  true  "User ID (UUID)"
 // @Success      204  "No Content"
 // @Failure      400  {object}  response.Response
+// @Failure      401  {object}  response.Response
 // @Failure      404  {object}  response.Response
 // @Failure      500  {object}  response.Response
 // @Router       /users/{id} [delete]
