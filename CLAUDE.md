@@ -15,13 +15,14 @@ internal/             # Private application code (features)
       ├── models/     # Data structures
       └── routes.go   # Route registration
 pkg/                  # Public shared utilities
-migrations/           # SQL database migrations
+migrations/           # SQL database migrations (golang-migrate)
 docs/                 # Auto-generated API docs (DO NOT EDIT)
 ```
 
 ## Development Commands
 
 ```bash
+# Development
 make dev      # 🔥 Hot reload with Air (recommended)
 make run      # Run server once (regenerates docs)
 make build    # Compile binary to bin/server
@@ -29,16 +30,150 @@ make swagger  # Regenerate API documentation only
 make test     # Run all tests
 make lint     # Code quality checks (REQUIRED before commit)
 make clean    # Remove build artifacts
+
+# Database Migrations
+make migrate-up       # Run all pending migrations
+make migrate-down     # Rollback last migration
+make migrate-down-all # Rollback ALL migrations (DANGER!)
+make migrate-status   # Show current migration version
+make migrate-create NAME=create_orders  # Create new migration
+make migrate-force VERSION=1            # Force set version (dirty state fix)
 ```
 
 ## Development Workflow
 
-1. Start development server: `make dev`
-2. Edit code - Air watches changes and auto-restarts
-3. View docs at http://localhost:8080/docs
-4. Before committing:
+1. Start PostgreSQL: `docker-compose up -d`
+2. Run migrations: `make migrate-up`
+3. Start development server: `make dev`
+4. Edit code - Air watches changes and auto-restarts
+5. View docs at http://localhost:8080/docs
+6. Before committing:
    - Run `make lint` - fix ALL errors (zero tolerance)
    - Run `make test` - ensure all tests pass
+
+## Database Migrations
+
+We use [golang-migrate](https://github.com/golang-migrate/migrate) for database migrations.
+
+### Install migrate CLI
+
+```bash
+# macOS
+brew install golang-migrate
+
+# Linux
+curl -L https://github.com/golang-migrate/migrate/releases/download/v4.17.0/migrate.linux-amd64.tar.gz | tar xvz
+sudo mv migrate /usr/local/bin/
+
+# Go install
+go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+```
+
+### Migration Commands
+
+| Command | Description |
+|---------|-------------|
+| `make migrate-up` | Apply all pending migrations |
+| `make migrate-down` | Rollback the last migration |
+| `make migrate-down-all` | Rollback ALL migrations (⚠️ destructive) |
+| `make migrate-status` | Show current migration version |
+| `make migrate-create NAME=xxx` | Create new migration files |
+| `make migrate-force VERSION=n` | Force set version (fix dirty state) |
+
+### Creating Migrations
+
+```bash
+# Create a new migration
+make migrate-create NAME=create_orders
+
+# This creates two files:
+# migrations/000002_create_orders.up.sql   <- Apply changes
+# migrations/000002_create_orders.down.sql <- Rollback changes
+```
+
+### Migration Best Practices
+
+1. **Always write both UP and DOWN migrations**
+   - UP: Apply the change
+   - DOWN: Revert the change completely
+
+2. **Make migrations atomic**
+   - One logical change per migration
+   - Don't mix table creation with data migration
+
+3. **Test rollbacks locally**
+   ```bash
+   make migrate-up      # Apply
+   make migrate-down    # Rollback
+   make migrate-up      # Re-apply (should work!)
+   ```
+
+4. **Use IF EXISTS / IF NOT EXISTS**
+   ```sql
+   -- UP
+   CREATE TABLE IF NOT EXISTS users (...);
+   CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+   
+   -- DOWN
+   DROP INDEX IF EXISTS idx_users_email;
+   DROP TABLE IF EXISTS users;
+   ```
+
+5. **Never modify applied migrations**
+   - Create a new migration instead
+   - Exception: Only during development before merging
+
+### Example Migration
+
+```sql
+-- migrations/000001_create_users_table.up.sql
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+```
+
+```sql
+-- migrations/000001_create_users_table.down.sql
+DROP INDEX IF EXISTS idx_users_email;
+DROP TABLE IF EXISTS users;
+```
+
+### Fixing Dirty Database State
+
+If a migration fails halfway, the database enters a "dirty" state:
+
+```bash
+# Check current state
+make migrate-status
+# Output: 2 (dirty)
+
+# Force set to last successful version
+make migrate-force VERSION=1
+
+# Fix your migration SQL, then retry
+make migrate-up
+```
+
+### Custom Database URL
+
+Override the default connection string:
+
+```bash
+# Use different database
+DATABASE_URL="postgres://user:pass@host:5433/mydb?sslmode=disable" make migrate-up
+
+# Or export it
+export DATABASE_URL="postgres://user:pass@host:5433/mydb?sslmode=disable"
+make migrate-up
+```
+
+> **Note:** Default port is 5433 (not 5432) to avoid conflicts with local PostgreSQL installations.
 
 ## API Documentation
 
@@ -259,6 +394,11 @@ server := &http.Server{
 - Configure connection lifetime
 - Handle connection errors gracefully
 
+### 7. Migrations
+- Always run `make migrate-up` after pulling changes
+- Test `make migrate-down` before pushing new migrations
+- Never modify migrations that are already in production
+
 ## Testing Guidelines
 
 ```go
@@ -350,6 +490,10 @@ func RegisterRoutes(mux *http.ServeMux) {
 | Check code | `make lint` |
 | Regen docs | `make swagger` |
 | Build prod | `make build` |
+| Run migrations | `make migrate-up` |
+| Rollback migration | `make migrate-down` |
+| Create migration | `make migrate-create NAME=xxx` |
+| Migration status | `make migrate-status` |
 
 ## Additional Resources
 
@@ -358,3 +502,4 @@ func RegisterRoutes(mux *http.ServeMux) {
 - [JSend Specification](https://github.com/omniti-labs/jsend)
 - [Air Documentation](https://github.com/air-verse/air)
 - [Scalar UI](https://github.com/scalar/scalar)
+- [golang-migrate](https://github.com/golang-migrate/migrate)

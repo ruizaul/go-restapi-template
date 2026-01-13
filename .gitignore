@@ -12,13 +12,19 @@ tmp/
 
 # Output of the go coverage tool
 *.out
+coverage.html
 
 # Go workspace file
 go.work
+go.work.sum
 
 # Environment files
 # Only commit .env.example
 .env
+.env.local
+.env.*.local
+.env.development
+.env.production
 
 # IDE
 .vscode/
@@ -26,10 +32,18 @@ go.work
 *.swp
 *.swo
 *~
+.project
+.settings/
+*.sublime-project
+*.sublime-workspace
 
 # OS
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
 # Terraform
 terraform/.terraform/
@@ -39,12 +53,57 @@ terraform/terraform.tfstate.backup
 terraform/tfplan
 terraform/terraform.tfvars
 terraform/.terraform.tfstate.lock.info
+*.tfstate
+*.tfstate.*
 
 # Outputs
 outputs.txt
 
 # Firebase credentials (should be in Secret Manager)
 config/firebase-service-account.json
+*-service-account.json
+*.pem
+*.key
 
 # Logs
 *.log
+logs/
+build-errors.log
+
+# Air hot reload
+tmp/
+
+# Vendor (if using go mod vendor)
+# vendor/
+
+# Debug
+debug
+*.prof
+cpu.prof
+mem.prof
+
+# Local development
+*.local
+.local/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Archives (shouldn't be in repo)
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Generated API docs (optional - uncomment if you want to ignore)
+docs/swagger.json
+docs/openapi.json
+docs/swagger.yaml
+docs/docs.go
